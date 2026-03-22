@@ -1,4 +1,4 @@
-﻿import { EquipmentItem } from '../types/game';
+﻿import { EquipmentRarity, EquipmentItem } from '../types/game';
 import Panel from './Panel';
 
 interface ShopPanelProps {
@@ -7,6 +7,14 @@ interface ShopPanelProps {
   onBuy: (id: string) => void;
   onLeave: () => void;
 }
+
+const rarityLabel: Record<EquipmentRarity, string> = {
+  normal: '一般',
+  fine: '精良',
+  advanced: '高等',
+  legendary: '傳說',
+  mythic: '神話'
+};
 
 const bonusText = (item: EquipmentItem) => {
   const t: string[] = [];
@@ -26,7 +34,8 @@ const ShopPanel = ({ gold, offers, onBuy, onLeave }: ShopPanelProps) => {
             <div className="flex items-start gap-2">
               <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
               <div className="flex-1">
-                <p className="font-display text-sm text-slate-100">{item.name} (Lv.{item.level})</p>
+                <p className="font-display text-sm text-slate-100">{item.name}</p>
+                <p className="text-amber-200">{rarityLabel[item.rarity]} | Lv.{item.level}</p>
                 <p className="text-slate-300">{bonusText(item)}</p>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-amber-200">{item.price} 金幣</span>
@@ -47,3 +56,4 @@ const ShopPanel = ({ gold, offers, onBuy, onLeave }: ShopPanelProps) => {
 };
 
 export default ShopPanel;
+

@@ -22,7 +22,7 @@ const StatusPanel = ({ player, boss }: StatusPanelProps) => {
 
   return (
     <div className="grid gap-4 xl:grid-cols-2">
-      <Panel title={`玩家 - ${template.name}`} subtitle={`等級 ${player.level} | 已擊敗 ${player.defeatedBosses} 隻怪物`}>
+      <Panel title={`玩家 - ${player.classTitle}`} subtitle={`等級 ${player.level} | 進階階級 ${player.classRank} | 已擊敗 ${player.defeatedBosses} 隻怪物`}>
         <div className="space-y-3">
           <div className="overflow-hidden rounded-xl border border-slate-600/70">
             <img src={template.avatar} alt={template.name} className="h-28 w-full object-cover" />
@@ -47,7 +47,11 @@ const StatusPanel = ({ player, boss }: StatusPanelProps) => {
         </div>
       </Panel>
 
-      <Panel title={`怪物 - ${boss.emoji} ${boss.name}`} subtitle={`${boss.title} | 危險等級 ${boss.level}`} className={boss.enraged ? 'border-red-400/80' : ''}>
+      <Panel
+        title={`怪物 - ${boss.emoji} ${boss.name}`}
+        subtitle={`${boss.title} | 危險等級 ${boss.level}${boss.isBoss ? ' | Boss' : ''}`}
+        className={boss.enraged ? 'border-red-400/80' : ''}
+      >
         <div className="space-y-3">
           <div className="overflow-hidden rounded-xl border border-slate-600/70">
             <img src={boss.portrait} alt={boss.name} className="h-36 w-full object-cover" />
@@ -71,3 +75,4 @@ const StatusPanel = ({ player, boss }: StatusPanelProps) => {
 };
 
 export default StatusPanel;
+

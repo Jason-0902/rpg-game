@@ -12,6 +12,8 @@ export type BattleActionId = 'attack' | 'guard' | 'skill' | 'heal';
 
 export type EquipmentSlot = 'head' | 'gloves' | 'weapon' | 'shield' | 'necklace' | 'shoes' | 'armor' | 'legs';
 
+export type EquipmentRarity = 'normal' | 'fine' | 'advanced' | 'legendary' | 'mythic';
+
 export type PotionTier = 'minor' | 'standard' | 'major' | 'supreme';
 
 export type PotionInventory = Record<PotionTier, number>;
@@ -42,13 +44,15 @@ export interface SkillDefinition {
   classId: ClassId;
   name: string;
   description: string;
+  source: 'base' | 'drop' | 'evolution';
+  evolutionRank?: number;
 }
 
 export interface EquipmentItem {
   id: string;
   name: string;
   slot: EquipmentSlot;
-  rarity: 'common' | 'rare' | 'epic';
+  rarity: EquipmentRarity;
   level: number;
   image: string;
   price: number;
@@ -71,12 +75,15 @@ export interface RewardBundle {
   money: number;
   potionTier: PotionTier | null;
   potionCount: number;
+  statGrowths: string[];
   equipment?: EquipmentItem | null;
   skill?: SkillDefinition | null;
 }
 
 export interface Player extends StatBlock, RuntimeCombatState {
   classId: ClassId;
+  classRank: number;
+  classTitle: string;
   exp: number;
   expToNext: number;
   gold: number;
@@ -96,6 +103,7 @@ export interface Boss extends StatBlock, RuntimeCombatState {
   name: string;
   title: string;
   stage: number;
+  isBoss: boolean;
   portrait: string;
   enrageThreshold: number;
   enrageBonus: number;
@@ -119,7 +127,6 @@ export interface BattleLogEntry {
     | 'reward';
   timestamp: number;
 }
-
 
 export interface UpgradeOption {
   id: string;
@@ -147,6 +154,7 @@ export interface UpgradeCatalogItem {
   apply: (player: Player) => Player;
   tags: string[];
 }
+
 export interface BattleSnapshot {
   player: Player;
   boss: Boss;
@@ -246,7 +254,7 @@ export interface RunSummary {
 }
 
 export const STORAGE_KEYS = {
-  gameState: 'rpg_boss_battle_state_v3',
-  runSummary: 'rpg_boss_battle_last_run_v3'
+  gameState: 'rpg_boss_battle_state_v4',
+  runSummary: 'rpg_boss_battle_last_run_v4'
 } as const;
 

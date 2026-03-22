@@ -1,5 +1,5 @@
 ﻿import { getSkillById } from '../data/skillData';
-import { EquipmentItem, Player } from '../types/game';
+import { EquipmentItem, EquipmentRarity, Player } from '../types/game';
 import Panel from './Panel';
 
 interface InventoryPanelProps {
@@ -17,6 +17,14 @@ const slotLabel: Record<string, string> = {
   shoes: '鞋子',
   armor: '衣服',
   legs: '腿'
+};
+
+const rarityLabel: Record<EquipmentRarity, string> = {
+  normal: '一般',
+  fine: '精良',
+  advanced: '高等',
+  legendary: '傳說',
+  mythic: '神話'
 };
 
 const bonusText = (item: EquipmentItem) => {
@@ -57,7 +65,8 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
                 <div className="flex items-start gap-2">
                   <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
                   <div className="flex-1">
-                    <p className="font-display text-sm text-slate-100">{item.name} (Lv.{item.level})</p>
+                    <p className="font-display text-sm text-slate-100">{item.name}</p>
+                    <p className="text-amber-200">{rarityLabel[item.rarity]} | Lv.{item.level}</p>
                     <p className="text-slate-300">{bonusText(item)}</p>
                   </div>
                   <button className="btn-muted px-2 py-1 text-[11px]" onClick={() => onEquip(item.id)}>
@@ -97,3 +106,4 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
 };
 
 export default InventoryPanel;
+

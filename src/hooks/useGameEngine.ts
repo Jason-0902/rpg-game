@@ -2,7 +2,7 @@
 import { CLASS_TEMPLATES } from '../data/classData';
 import { createRandomEquipment, createShopOffers } from '../data/equipmentData';
 import { rollTravelEvent } from '../data/eventData';
-import { getSkillById, rollSkillDrop } from '../data/skillData';
+import { getClassTitleByRank, getEvolutionSkillForRank, getSkillById, rollSkillDrop } from '../data/skillData';
 import {
   applyVictoryRewards,
   createBossForLevel,
@@ -106,10 +106,10 @@ const equipFromInventory = (player: Player, itemId: string): { player: Player; t
 };
 
 const rollPotionDrop = (stage: number): { tier: PotionTier; count: number } | null => {
-  if (Math.random() > 0.45) return null;
-  if (stage > 90 && Math.random() < 0.12) return { tier: 'supreme', count: 1 };
-  if (stage > 55 && Math.random() < 0.22) return { tier: 'major', count: 1 };
-  if (stage > 25 && Math.random() < 0.42) return { tier: 'standard', count: 1 };
+  if (Math.random() > 0.46) return null;
+  if (stage > 120 && Math.random() < 0.16) return { tier: 'supreme', count: 1 };
+  if (stage > 70 && Math.random() < 0.27) return { tier: 'major', count: 1 };
+  if (stage > 30 && Math.random() < 0.46) return { tier: 'standard', count: 1 };
   return { tier: 'minor', count: 1 };
 };
 
@@ -140,7 +140,7 @@ const applyRandomKillGrowth = (player: Player) => {
     if (k === 'maxHp') {
       const v = 10 + Math.floor(Math.random() * 91);
       next.maxHp += v;
-      next.hp = Math.min(next.maxHp, next.hp + Math.round(v * 0.5));
+      next.hp = Math.min(next.maxHp, next.hp + Math.round(v * 0.45));
       lines.push(`最大生命 +${v}`);
     }
   }
@@ -148,7 +148,31 @@ const applyRandomKillGrowth = (player: Player) => {
   return { player: next, lines };
 };
 
-const generateReward = (player: Player, stage: number): RewardBundle => {
+const evolveClassIfNeeded = (player: Player) => {
+  const targetRank = Math.floor(player.level / 100);
+  if (targetRank <= player.classRank) {
+    return { player, logs: [] as string[] };
+  }
+
+  let next = { ...player };
+  const logs: string[] = [];
+  for (let rank = player.classRank + 1; rank <= targetRank; rank += 1) {
+    next.classRank = rank;
+    next.classTitle = getClassTitleByRank(next.classId, rank);
+    logs.push(`職業進階：${next.classTitle}`);
+
+    const evoSkill = getEvolutionSkillForRank(next.classId, rank);
+    if (evoSkill && !next.unlockedSkillIds.includes(evoSkill.id)) {
+      next.unlockedSkillIds = [...next.unlockedSkillIds, evoSkill.id];
+      next.activeSkillId = evoSkill.id;
+      logs.push(`獲得進階技能：${evoSkill.name}`);
+    }
+  }
+
+  return { player: next, logs };
+};
+
+const generateReward = (player: Player, stage: number, statGrowths: string[]): RewardBundle => {
   const money = Math.round(22 + stage * 7 + Math.random() * 18);
   const p = rollPotionDrop(stage);
   const equipment = Math.random() < 0.44 ? createRandomEquipment(stage) : null;
@@ -158,6 +182,7 @@ const generateReward = (player: Player, stage: number): RewardBundle => {
     money,
     potionTier: p?.tier ?? null,
     potionCount: p?.count ?? 0,
+    statGrowths,
     equipment,
     skill
   };
@@ -256,12 +281,21 @@ export const useGameEngine = () => {
         const growth = applyRandomKillGrowth(progressed);
         progressed = growth.player;
 
-        const bundle = generateReward(progressed, prev.stageLevel);
+        const evolved = evolveClassIfNeeded(progressed);
+        progressed = evolved.player;
+
+        const bundle = generateReward(progressed, prev.stageLevel, growth.lines);
         let rewarded = { ...progressed, gold: progressed.gold + bundle.money };
         const rewardLogs: BattleLogEntry[] = [
           createLog('system', `獲得金錢 ${bundle.money}。`, 'reward', outcome.turn),
-          createLog('system', `擊殺成長：${growth.lines.join('、')}`, 'buff', outcome.turn)
+          createLog('system', `本次成長：${growth.lines.join('、')}`, 'buff', outcome.turn)
         ];
+
+        if (evolved.logs.length > 0) {
+          evolved.logs.forEach((line) => {
+            rewardLogs.push(createLog('system', line, 'reward', outcome.turn));
+          });
+        }
 
         if (bundle.potionTier && bundle.potionCount > 0) {
           rewarded = {
@@ -279,7 +313,7 @@ export const useGameEngine = () => {
           rewardLogs.push(createLog('system', `掉落裝備：${bundle.equipment.name}`, 'reward', outcome.turn));
         }
 
-        if (bundle.skill) {
+        if (bundle.skill && !rewarded.unlockedSkillIds.includes(bundle.skill.id)) {
           rewarded = {
             ...rewarded,
             unlockedSkillIds: [...rewarded.unlockedSkillIds, bundle.skill.id],
@@ -361,6 +395,7 @@ export const useGameEngine = () => {
 
       const nextLevel = prev.stageLevel + 1;
       const nextBoss = createBossForLevel(nextLevel);
+      const warning = nextBoss.isBoss ? `第 ${nextLevel} 層 Boss 出現：${nextBoss.emoji} ${nextBoss.name}` : `第 ${nextLevel} 隻怪物：${nextBoss.emoji} ${nextBoss.name}`;
       return {
         ...prev,
         player: resetForNextBoss(prev.player),
@@ -369,7 +404,7 @@ export const useGameEngine = () => {
         phase: 'battle',
         turn: 1,
         reward: null,
-        logs: appendLogs(prev.logs, [createLog('system', `第 ${nextLevel} 隻怪物：${nextBoss.emoji} ${nextBoss.name}`, 'warning', 1)])
+        logs: appendLogs(prev.logs, [createLog('system', warning, 'warning', 1)])
       };
     });
   }, []);
@@ -502,13 +537,13 @@ export const useGameEngine = () => {
 
   const hud = useMemo(() => {
     if (!state.player || !state.boss) {
-      return { className: null, bossName: null, stageLabel: '第 1 隻怪物' };
+      return { className: null, bossName: null, stageLabel: '第 1 層' };
     }
 
     return {
-      className: CLASS_TEMPLATES[state.player.classId].name,
-      bossName: `${state.boss.emoji} ${state.boss.name}・${state.boss.title}`,
-      stageLabel: `第 ${state.stageLevel} 隻怪物`
+      className: `${state.player.classTitle} (${CLASS_TEMPLATES[state.player.classId].name})`,
+      bossName: `${state.boss.emoji} ${state.boss.name}?${state.boss.title}`,
+      stageLabel: state.boss.isBoss ? `第 ${state.stageLevel} 層 Boss` : `第 ${state.stageLevel} 層`
     };
   }, [state.player, state.boss, state.stageLevel]);
 
@@ -526,3 +561,4 @@ export const useGameEngine = () => {
     setActiveSkill
   };
 };
+

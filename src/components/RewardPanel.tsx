@@ -25,6 +25,10 @@ const RewardPanel = ({ reward, onContinue }: RewardPanelProps) => {
         </p>
         <p>技能：{reward.skill ? getSkillById(reward.skill.id)?.name ?? reward.skill.name : '本次未掉落'}</p>
         <p>裝備：{reward.equipment ? reward.equipment.name : '本次未掉落'}</p>
+        <div className="rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-2">
+          <p className="text-emerald-200">本次屬性成長</p>
+          <p className="mt-1 text-xs text-slate-100">{reward.statGrowths.join('、')}</p>
+        </div>
       </div>
       <button className="btn-primary mt-4" onClick={onContinue}>
         繼續旅行
@@ -34,3 +38,4 @@ const RewardPanel = ({ reward, onContinue }: RewardPanelProps) => {
 };
 
 export default RewardPanel;
+
