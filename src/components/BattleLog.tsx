@@ -51,7 +51,7 @@ const BattleLog = ({ logs }: BattleLogProps) => {
 
   return (
     <Panel title="戰鬥紀錄" subtitle="即時戰鬥訊息">
-      <div className="log-scroll h-[360px] space-y-2 overflow-y-auto pr-2">
+      <div className="log-scroll h-[260px] space-y-2 overflow-y-auto pr-1 md:h-[360px] md:pr-2">
         <AnimatePresence initial={false}>
           {visibleLogs.map((log) => (
             <motion.div

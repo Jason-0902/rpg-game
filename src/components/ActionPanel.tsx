@@ -19,8 +19,12 @@ const ActionPanel = ({ player, disabled, onAction }: ActionPanelProps) => {
   const potionTotal = player.potions.minor + player.potions.standard + player.potions.major + player.potions.supreme;
 
   return (
-    <Panel title="行動面板" subtitle={`回復生命只能透過藥水道具（目前 ${potionTotal} 瓶）`}>
-      <div className="grid gap-3 md:grid-cols-2">
+    <Panel
+      title="行動面板"
+      subtitle={`回復生命只能透過藥水道具（目前 ${potionTotal} 瓶）`}
+      className="sticky bottom-2 z-30 md:bottom-3 xl:static"
+    >
+      <div className="grid grid-cols-2 gap-2 md:gap-3">
         {actions.map((action) => {
           const lockByCooldown = action.id === 'skill' && player.skillCooldown > 0;
           const lockByPotion = action.id === 'heal' && potionTotal <= 0;
@@ -38,8 +42,8 @@ const ActionPanel = ({ player, disabled, onAction }: ActionPanelProps) => {
               disabled={lock}
               onClick={() => onAction(action.id)}
             >
-              <p className="font-display text-base uppercase tracking-[0.1em]">{action.label}</p>
-              <p className="mt-1 text-xs text-slate-300">{action.description}</p>
+              <p className="font-display text-sm uppercase tracking-[0.08em] md:text-base">{action.label}</p>
+              <p className="mt-1 text-[11px] text-slate-300 md:text-xs">{action.description}</p>
               {lockByCooldown ? <p className="mt-2 text-[11px] uppercase tracking-wider text-amber-200">冷卻 {player.skillCooldown} 回合</p> : null}
               {lockByPotion ? <p className="mt-2 text-[11px] uppercase tracking-wider text-red-200">藥水不足</p> : null}
             </motion.button>

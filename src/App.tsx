@@ -28,7 +28,7 @@ const App = () => {
   } = useGameEngine();
 
   return (
-    <div className={`relative min-h-screen pb-8 ${state.player?.alignment === 'demon' ? 'theme-demon' : ''}`}>
+    <div className={`relative min-h-screen pb-24 md:pb-10 ${state.player?.alignment === 'demon' ? 'theme-demon' : ''}`}>
       {state.phase !== 'classSelection' ? <ArenaBackdrop /> : null}
 
       <AnimatePresence mode="wait">
@@ -47,11 +47,11 @@ const App = () => {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            className="mx-auto w-full max-w-7xl px-4 py-5"
+            className="mx-auto w-full max-w-7xl px-3 py-4 md:px-4 md:py-5"
           >
             <TopHud stageLabel={hud.stageLabel} className={hud.className} bossName={hud.bossName} onRestart={restartRun} />
 
-            <div className="grid gap-4 xl:grid-cols-[1.35fr_0.9fr]">
+            <div className="grid gap-3 md:gap-4 xl:grid-cols-[1.35fr_0.9fr]">
               <section className="space-y-4">
                 <StatusPanel player={state.player} boss={state.boss} />
 

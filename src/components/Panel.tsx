@@ -17,7 +17,7 @@ const Panel = ({ title, subtitle, actions, children, className }: PanelProps) =>
       transition={{ duration: 0.28 }}
       className={`panel glass-card noise ${className ?? ''}`}
     >
-      <header className="mb-3 flex items-center justify-between gap-2">
+      <header className="mb-2.5 flex items-center justify-between gap-2 md:mb-3">
         <div>
           <h3 className="panel-title text-base md:text-lg">{title}</h3>
           {subtitle ? <p className="text-xs text-slate-400 md:text-sm">{subtitle}</p> : null}
