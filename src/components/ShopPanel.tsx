@@ -23,13 +23,18 @@ const ShopPanel = ({ gold, offers, onBuy, onLeave }: ShopPanelProps) => {
       <div className="space-y-2">
         {offers.map((item) => (
           <div key={item.id} className="rounded-lg border border-slate-600/70 bg-slate-900/60 p-3 text-xs">
-            <p className="font-display text-sm text-slate-100">{item.name}</p>
-            <p className="text-slate-300">{bonusText(item)}</p>
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-amber-200">{item.price} 金幣</span>
-              <button className="btn-muted px-2 py-1 text-[11px]" onClick={() => onBuy(item.id)}>
-                購買
-              </button>
+            <div className="flex items-start gap-2">
+              <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
+              <div className="flex-1">
+                <p className="font-display text-sm text-slate-100">{item.name} (Lv.{item.level})</p>
+                <p className="text-slate-300">{bonusText(item)}</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-amber-200">{item.price} 金幣</span>
+                  <button className="btn-muted px-2 py-1 text-[11px]" onClick={() => onBuy(item.id)}>
+                    購買
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         ))}

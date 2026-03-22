@@ -1,6 +1,7 @@
 ﻿import { BOSS_TEMPLATES } from '../data/bossData';
 import { CLASS_TEMPLATES } from '../data/classData';
 import { getBaseSkillId } from '../data/skillData';
+import { generateMonsterPortrait } from './imageGen';
 import {
   ActionOutcome,
   BattleActionId,
@@ -12,7 +13,8 @@ import {
   DamageResult,
   EquipmentItem,
   EquipmentSlot,
-  Player
+  Player,
+  PotionTier
 } from '../types/game';
 
 const COMBAT_NUMBERS: CombatNumbers = {
@@ -24,40 +26,8 @@ const COMBAT_NUMBERS: CombatNumbers = {
 };
 
 const rng = () => Math.random();
-
 const rollInt = (min: number, max: number) => Math.floor(rng() * (max - min + 1)) + min;
-
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
-
-const createPortrait = (name: string, emoji: string, stage: number): string => {
-  const seed = name.split('').reduce((acc, c) => acc + c.charCodeAt(0), stage * 37);
-  const colorA = `hsl(${seed % 360}, 68%, 44%)`;
-  const colorB = `hsl(${(seed * 3) % 360}, 74%, 32%)`;
-  const colorC = `hsl(${(seed * 7) % 360}, 85%, 62%)`;
-
-  const svg = `
-  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 180'>
-    <defs>
-      <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-        <stop offset='0%' stop-color='${colorA}'/>
-        <stop offset='100%' stop-color='${colorB}'/>
-      </linearGradient>
-      <filter id='n'>
-        <feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/>
-        <feColorMatrix type='saturate' values='0'/>
-        <feComponentTransfer><feFuncA type='table' tableValues='0 0.18'/></feComponentTransfer>
-      </filter>
-    </defs>
-    <rect width='300' height='180' fill='url(#g)'/>
-    <circle cx='65' cy='35' r='70' fill='${colorC}' opacity='0.3'/>
-    <circle cx='250' cy='155' r='80' fill='${colorC}' opacity='0.25'/>
-    <rect width='300' height='180' filter='url(#n)'/>
-    <text x='150' y='96' text-anchor='middle' font-size='58' font-family='Segoe UI Emoji'>${emoji}</text>
-    <text x='150' y='152' text-anchor='middle' font-size='20' fill='white' font-family='sans-serif'>${name}</text>
-  </svg>`;
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-};
 
 const emptyEquipment = (): Record<EquipmentSlot, EquipmentItem | null> => ({
   head: null,
@@ -84,6 +54,14 @@ export const createLog = (
   timestamp: Date.now()
 });
 
+export const getBestPotionTier = (player: Player): PotionTier | null => {
+  if (player.potions.supreme > 0) return 'supreme';
+  if (player.potions.major > 0) return 'major';
+  if (player.potions.standard > 0) return 'standard';
+  if (player.potions.minor > 0) return 'minor';
+  return null;
+};
+
 export const createPlayerFromClass = (classId: ClassId): Player => {
   const template = CLASS_TEMPLATES[classId];
   const baseSkill = getBaseSkillId(classId);
@@ -107,7 +85,12 @@ export const createPlayerFromClass = (classId: ClassId): Player => {
     exp: 0,
     expToNext: 100,
     gold: 0,
-    potions: 3,
+    potions: {
+      minor: 2,
+      standard: 1,
+      major: 0,
+      supreme: 0
+    },
     totalDamageDealt: 0,
     totalDamageTaken: 0,
     defeatedBosses: 0,
@@ -126,13 +109,14 @@ export const createBossForLevel = (level: number): Boss => {
 
   let maxHp = Math.round((template.baseHp + template.hpScale * (level - 1)) * scale);
   let atk = Math.round((template.baseAtk + template.atkScale * (level - 1)) * (0.9 + scale * 0.08));
-  const def = Math.round((template.baseDef + template.defScale * (level - 1)) * (0.85 + scale * 0.05));
-  const crit = clamp(template.baseCrit + template.critScale * (level - 1), 0.05, 0.45);
 
   if (level <= 50) {
     maxHp = Math.min(maxHp, 50);
     atk = Math.min(atk, 50);
   }
+
+  const def = Math.round((template.baseDef + template.defScale * (level - 1)) * (0.85 + scale * 0.05));
+  const crit = clamp(template.baseCrit + template.critScale * (level - 1), 0.05, 2.2);
 
   return {
     id: `boss-${level}-${Math.random().toString(36).slice(2, 8)}`,
@@ -140,7 +124,7 @@ export const createBossForLevel = (level: number): Boss => {
     name: template.name,
     title: template.title,
     stage: level,
-    portrait: createPortrait(template.name, template.emoji, level),
+    portrait: generateMonsterPortrait(template.name, template.emoji, level),
     hp: maxHp,
     maxHp,
     atk,
@@ -158,7 +142,7 @@ export const createBossForLevel = (level: number): Boss => {
     enrageThreshold: template.enrageThreshold,
     enrageBonus: template.enrageBonus,
     enraged: false,
-    dropGold: Math.round(18 + level * 6 + rollInt(0, 9))
+    dropGold: Math.round(25 + level * 8 + rollInt(0, 12))
   };
 };
 
@@ -170,12 +154,15 @@ export const calculateDamage = (
 ): DamageResult => {
   const rolledVariance = COMBAT_NUMBERS.attackRollMin + rng() * (COMBAT_NUMBERS.attackRollMax - COMBAT_NUMBERS.attackRollMin);
   const rawDamage = attackerAtk * rolledVariance * bonusMultiplier;
-  const reducedByDefense = defenderDef * (0.66 + rng() * 0.2);
+  const reducedByDefense = defenderDef * (0.65 + rng() * 0.2);
   let finalDamage = Math.max(COMBAT_NUMBERS.minimumDamage, Math.round(rawDamage - reducedByDefense));
-  const isCritical = rng() <= critChance;
+
+  const chanceToCrit = clamp(critChance, 0, 1);
+  const isCritical = rng() <= chanceToCrit;
 
   if (isCritical) {
-    finalDamage = Math.round(finalDamage * COMBAT_NUMBERS.critMultiplier);
+    const overflowCritMult = critChance > 1 ? critChance : 1;
+    finalDamage = Math.round(finalDamage * COMBAT_NUMBERS.critMultiplier * overflowCritMult);
   }
 
   return {
@@ -216,12 +203,9 @@ const applyEndTurnDecay = <T extends Player | Boss>(entity: T): T => {
 };
 
 const resolveBossEnrage = (boss: Boss, logs: BattleLogEntry[], turn: number): Boss => {
-  if (boss.enraged) {
-    return boss;
-  }
+  if (boss.enraged) return boss;
 
-  const thresholdHp = boss.maxHp * boss.enrageThreshold;
-  if (boss.hp <= thresholdHp) {
+  if (boss.hp <= boss.maxHp * boss.enrageThreshold) {
     const enragedBoss = {
       ...boss,
       enraged: true,
@@ -239,34 +223,15 @@ export const getBossIntent = (boss: Boss, turn: number): BossIntent => {
   const hpRatio = boss.hp / boss.maxHp;
 
   if (hpRatio < 0.35 && turn % 3 === 0) {
-    return {
-      id: 'drain',
-      label: '靈魂汲取',
-      description: '吸取生命並回復血量'
-    };
+    return { id: 'drain', label: '靈魂汲取', description: '吸取生命並回復血量' };
   }
-
   if (boss.enraged && turn % 2 === 0) {
-    return {
-      id: 'heavy',
-      label: '毀滅重砸',
-      description: '高倍率重擊'
-    };
+    return { id: 'heavy', label: '毀滅重砸', description: '高倍率重擊' };
   }
-
   if (turn % 4 === 0) {
-    return {
-      id: 'focus',
-      label: '黑暗蓄力',
-      description: '提升下回合爆擊與攻擊'
-    };
+    return { id: 'focus', label: '黑暗蓄力', description: '提升下回合爆擊與攻擊' };
   }
-
-  return {
-    id: 'strike',
-    label: '兇暴打擊',
-    description: '一般攻擊'
-  };
+  return { id: 'strike', label: '兇暴打擊', description: '一般攻擊' };
 };
 
 const handlePlayerAttack = (player: Player, boss: Boss, turn: number): ActionOutcome => {
@@ -276,7 +241,7 @@ const handlePlayerAttack = (player: Player, boss: Boss, turn: number): ActionOut
   const dmg = calculateDamage(
     nextPlayer.atk + nextPlayer.atkBuff,
     boss.def + boss.defBuff,
-    clamp(nextPlayer.crit + nextPlayer.critBuff + critBonus, 0.05, 0.95)
+    nextPlayer.crit + nextPlayer.critBuff + critBonus
   );
 
   const shieldResult = applyShieldedDamage(boss.hp, boss.shield, dmg.finalDamage);
@@ -287,12 +252,16 @@ const handlePlayerAttack = (player: Player, boss: Boss, turn: number): ActionOut
   };
 
   const logs: BattleLogEntry[] = [];
-
-  if (dmg.isCritical) {
-    logs.push(createLog('player', `爆擊！你造成 ${shieldResult.appliedDamage} 點傷害。`, 'critical', turn));
-  } else {
-    logs.push(createLog('player', `你造成 ${shieldResult.appliedDamage} 點傷害。`, 'damage', turn));
-  }
+  logs.push(
+    createLog(
+      'player',
+      dmg.isCritical
+        ? `爆擊！你造成 ${shieldResult.appliedDamage} 點傷害。`
+        : `你造成 ${shieldResult.appliedDamage} 點傷害。`,
+      dmg.isCritical ? 'critical' : 'damage',
+      turn
+    )
+  );
 
   if (shieldResult.blockedByShield > 0) {
     logs.push(createLog('system', `首領護盾抵擋了 ${shieldResult.blockedByShield} 點傷害。`, 'info', turn));
@@ -326,21 +295,49 @@ const handlePlayerGuard = (player: Player, boss: Boss, turn: number): ActionOutc
   };
 };
 
-const handlePlayerHealByItem = (player: Player, boss: Boss, turn: number): ActionOutcome => {
-  const healAmount = Math.round(player.maxHp * 0.22 + player.level * 2);
-  const nextHp = Math.min(player.maxHp, player.hp + healAmount);
+const consumePotionAndHeal = (player: Player): { player: Player; healed: number; tier: PotionTier | null } => {
+  const tier = getBestPotionTier(player);
+  if (!tier) return { player, healed: 0, tier: null };
 
-  const nextPlayer = {
-    ...player,
-    hp: nextHp,
-    combo: 0,
-    potions: Math.max(0, player.potions - 1)
-  };
+  let heal = 0;
+  if (tier === 'minor') heal = Math.round(player.maxHp * 0.25);
+  if (tier === 'standard') heal = Math.round(player.maxHp * 0.45);
+  if (tier === 'major') heal = Math.round(player.maxHp * 0.7);
+  if (tier === 'supreme') heal = player.maxHp;
+
+  const nextHp = Math.min(player.maxHp, player.hp + heal);
 
   return {
-    player: nextPlayer,
+    player: {
+      ...player,
+      hp: nextHp,
+      combo: 0,
+      potions: {
+        ...player.potions,
+        [tier]: Math.max(0, player.potions[tier] - 1)
+      }
+    },
+    healed: nextHp - player.hp,
+    tier
+  };
+};
+
+const handlePlayerHealByItem = (player: Player, boss: Boss, turn: number): ActionOutcome => {
+  const result = consumePotionAndHeal(player);
+  if (!result.tier) {
+    return {
+      player,
+      boss,
+      logs: [createLog('system', '沒有可用藥水。', 'warning', turn)],
+      phase: 'battle',
+      turn
+    };
+  }
+
+  return {
+    player: result.player,
     boss,
-    logs: [createLog('player', `使用回復藥水，恢復 ${nextHp - player.hp} 點生命。`, 'heal', turn)],
+    logs: [createLog('player', `使用${result.tier}藥水，恢復 ${result.healed} 點生命。`, 'heal', turn)],
     phase: 'battle',
     turn
   };
@@ -356,64 +353,28 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
     nextPlayer.shield += shieldGain;
     nextPlayer.defBuff += 4;
     logs.push(createLog('player', `施放技能，獲得 ${shieldGain} 護盾。`, 'buff', turn));
-
-    if (player.activeSkillId === 'warrior_crush') {
-      const extra = Math.max(6, Math.round(player.atk * 0.8));
-      nextBoss.hp = Math.max(0, nextBoss.hp - extra);
-      nextBoss.defBuff = Math.min(nextBoss.defBuff, -2);
-      logs.push(createLog('player', `破甲重擊追加 ${extra} 點傷害，並削弱防禦。`, 'critical', turn));
-    }
-
-    if (player.activeSkillId === 'warrior_counter') {
-      nextPlayer.atkBuff += 4;
-      logs.push(createLog('player', '反擊架勢啟動，下一擊更強。', 'buff', turn));
-    }
   }
 
   if (player.classId === 'mage') {
-    const dmg = calculateDamage(player.atk + 14, Math.max(0, boss.def + boss.defBuff - 4), clamp(player.crit + 0.08, 0.05, 0.95), 1.5);
-    const shieldResult = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
-    nextBoss.hp = shieldResult.nextHp;
-    nextBoss.shield = shieldResult.nextShield;
-    nextPlayer.totalDamageDealt += shieldResult.appliedDamage;
-    logs.push(createLog('player', `奧術爆發造成 ${shieldResult.appliedDamage} 點傷害。`, dmg.isCritical ? 'critical' : 'damage', turn));
-
-    if (player.activeSkillId === 'mage_frost_prison') {
-      nextBoss.atkBuff = Math.min(nextBoss.atkBuff, -4);
-      logs.push(createLog('player', '寒霜禁錮使首領攻擊下降。', 'debuff', turn));
-    }
-
-    if (player.activeSkillId === 'mage_chain_burst') {
-      const chain = Math.max(5, Math.round(player.atk * 0.5));
-      nextBoss.hp = Math.max(0, nextBoss.hp - chain);
-      nextPlayer.totalDamageDealt += chain;
-      logs.push(createLog('player', `連鎖脈衝追加 ${chain} 點傷害。`, 'critical', turn));
-    }
+    const dmg = calculateDamage(player.atk + 14, Math.max(0, boss.def + boss.defBuff - 4), player.crit + 0.08, 1.5);
+    const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
+    nextBoss.hp = r.nextHp;
+    nextBoss.shield = r.nextShield;
+    nextPlayer.totalDamageDealt += r.appliedDamage;
+    logs.push(createLog('player', `奧術爆發造成 ${r.appliedDamage} 點傷害。`, dmg.isCritical ? 'critical' : 'damage', turn));
   }
 
   if (player.classId === 'assassin') {
-    const hits = player.activeSkillId === 'assassin_shadow_flurry' ? 3 : 2;
     let total = 0;
-    for (let i = 0; i < hits; i += 1) {
-      const dmg = calculateDamage(player.atk + 6, boss.def + boss.defBuff, clamp(player.crit + 0.05 + i * 0.02, 0.05, 0.95), 0.9);
+    for (let i = 0; i < 3; i += 1) {
+      const dmg = calculateDamage(player.atk + 6, boss.def + boss.defBuff, player.crit + 0.05 + i * 0.02, 0.88);
       const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
       nextBoss.hp = r.nextHp;
       nextBoss.shield = r.nextShield;
       total += r.appliedDamage;
     }
     nextPlayer.totalDamageDealt += total;
-    logs.push(createLog('player', `暗影連擊命中 ${hits} 段，總計 ${total} 傷害。`, 'critical', turn));
-
-    if (player.activeSkillId === 'assassin_bleed_mark') {
-      const bleed = Math.max(4, Math.round(player.atk * 0.35));
-      nextBoss.hp = Math.max(0, nextBoss.hp - bleed);
-      logs.push(createLog('player', `裂傷印記追加 ${bleed} 點流血傷害。`, 'damage', turn));
-    }
-
-    if (player.activeSkillId === 'assassin_ghost_step') {
-      nextPlayer.critBuff += 0.12;
-      logs.push(createLog('player', '鬼步發動，爆擊率提高。', 'buff', turn));
-    }
+    logs.push(createLog('player', `暗影連擊總計 ${total} 傷害。`, 'critical', turn));
   }
 
   return {
@@ -436,19 +397,12 @@ const runBossAction = (player: Player, boss: Boss, turn: number): ActionOutcome 
     nextBoss.atkBuff += atkBoost;
     nextBoss.critBuff += 0.08;
     logs.push(createLog('boss', `${boss.emoji} ${boss.name} 正在蓄力（攻擊 +${atkBoost}）`, 'buff', turn));
-    return {
-      player: nextPlayer,
-      boss: nextBoss,
-      logs,
-      phase: 'battle',
-      turn: turn + 1
-    };
+    return { player: nextPlayer, boss: nextBoss, logs, phase: 'battle', turn: turn + 1 };
   }
 
   const multi = intent.id === 'heavy' ? 1.45 : intent.id === 'drain' ? 0.95 : 1;
   const critBonus = intent.id === 'heavy' ? 0.04 : 0;
-
-  const damage = calculateDamage(nextBoss.atk + nextBoss.atkBuff, nextPlayer.def + nextPlayer.defBuff, clamp(nextBoss.crit + nextBoss.critBuff + critBonus, 0.05, 0.75), multi);
+  const damage = calculateDamage(nextBoss.atk + nextBoss.atkBuff, nextPlayer.def + nextPlayer.defBuff, nextBoss.crit + nextBoss.critBuff + critBonus, multi);
 
   let reducedDamage = damage.finalDamage;
   if (nextPlayer.isGuarding) {
@@ -460,16 +414,7 @@ const runBossAction = (player: Player, boss: Boss, turn: number): ActionOutcome 
   nextPlayer.shield = shieldResult.nextShield;
   nextPlayer.totalDamageTaken += shieldResult.appliedDamage;
 
-  logs.push(
-    createLog(
-      'boss',
-      damage.isCritical
-        ? `${boss.emoji} ${boss.name} 爆擊造成 ${shieldResult.appliedDamage} 傷害！`
-        : `${boss.emoji} ${boss.name} 造成 ${shieldResult.appliedDamage} 傷害。`,
-      damage.isCritical ? 'warning' : 'damage',
-      turn
-    )
-  );
+  logs.push(createLog('boss', `${boss.emoji} ${boss.name} 造成 ${shieldResult.appliedDamage} 傷害。`, damage.isCritical ? 'warning' : 'damage', turn));
 
   if (intent.id === 'drain' && shieldResult.appliedDamage > 0) {
     const heal = Math.round(shieldResult.appliedDamage * 0.35);
@@ -528,13 +473,7 @@ export const performTurn = (action: BattleActionId, player: Player, boss: Boss, 
 
   if (currentBoss.hp <= 0) {
     logs.push(createLog('system', `${currentBoss.emoji} ${currentBoss.name} 被擊敗。`, 'reward', turn));
-    return {
-      player: currentPlayer,
-      boss: currentBoss,
-      logs,
-      phase: 'reward',
-      turn
-    };
+    return { player: currentPlayer, boss: currentBoss, logs, phase: 'reward', turn };
   }
 
   const bossOutcome = runBossAction(currentPlayer, currentBoss, turn);
@@ -544,28 +483,15 @@ export const performTurn = (action: BattleActionId, player: Player, boss: Boss, 
 
   if (currentPlayer.hp <= 0) {
     logs.push(createLog('system', '你被擊敗，旅程終止。', 'warning', turn));
-    return {
-      player: currentPlayer,
-      boss: currentBoss,
-      logs,
-      phase: 'defeat',
-      turn: bossOutcome.turn
-    };
+    return { player: currentPlayer, boss: currentBoss, logs, phase: 'defeat', turn: bossOutcome.turn };
   }
 
   const normalized = normalizeAfterTurn(currentPlayer, currentBoss);
-
-  return {
-    player: normalized.player,
-    boss: normalized.boss,
-    logs,
-    phase: 'battle',
-    turn: bossOutcome.turn
-  };
+  return { player: normalized.player, boss: normalized.boss, logs, phase: 'battle', turn: bossOutcome.turn };
 };
 
 export const applyVictoryRewards = (player: Player, boss: Boss): Player => {
-  const expGain = Math.round(22 + boss.stage * 10 + boss.maxHp * 0.03);
+  const expGain = Math.round(26 + boss.stage * 12 + boss.maxHp * 0.05 + boss.atk * 0.4);
   let nextPlayer = {
     ...player,
     exp: player.exp + expGain,
@@ -579,7 +505,7 @@ export const applyVictoryRewards = (player: Player, boss: Boss): Player => {
   while (nextPlayer.exp >= nextPlayer.expToNext) {
     nextPlayer.exp -= nextPlayer.expToNext;
     nextPlayer.level += 1;
-    nextPlayer.expToNext = Math.round(nextPlayer.expToNext * 1.2 + 18);
+    nextPlayer.expToNext = Math.round(nextPlayer.expToNext * 1.22 + 20);
 
     const growth = CLASS_TEMPLATES[nextPlayer.classId].growth;
     const maxHp = nextPlayer.maxHp + growth.hp;
@@ -590,7 +516,7 @@ export const applyVictoryRewards = (player: Player, boss: Boss): Player => {
       hp: Math.min(maxHp, nextPlayer.hp + Math.round(growth.hp * 0.45)),
       atk: nextPlayer.atk + growth.atk,
       def: nextPlayer.def + growth.def,
-      crit: clamp(nextPlayer.crit + growth.crit, 0.05, 0.85)
+      crit: nextPlayer.crit + growth.crit
     };
   }
 
@@ -613,6 +539,5 @@ export const getActionDisabledReason = (action: BattleActionId, player: Player):
   if (action === 'skill' && player.skillCooldown > 0) {
     return `技能冷卻中：${player.skillCooldown}`;
   }
-
   return null;
 };

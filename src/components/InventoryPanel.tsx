@@ -30,26 +30,34 @@ const bonusText = (item: EquipmentItem) => {
 
 const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps) => {
   return (
-    <Panel title="背包與裝備" subtitle="可從背包裝備武器，也可切換已學技能。">
+    <Panel title="背包與裝備" subtitle="裝備可在此切換，技能也可切換。">
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-4">
           {Object.entries(player.equipped).map(([slot, item]) => (
             <div key={slot} className="stat-chip">
               <p className="text-slate-400">{slotLabel[slot]}</p>
-              <p className="text-slate-100">{item ? item.name : '未裝備'}</p>
+              {item ? (
+                <>
+                  <img src={item.image} alt={item.name} className="mt-1 h-12 w-full rounded-md object-cover" />
+                  <p className="mt-1 text-slate-100">{item.name}</p>
+                </>
+              ) : (
+                <p className="text-slate-500">未裝備</p>
+              )}
             </div>
           ))}
         </div>
 
-        <div className="max-h-44 space-y-2 overflow-y-auto pr-1">
+        <div className="max-h-56 space-y-2 overflow-y-auto pr-1">
           {player.inventoryEquipment.length === 0 ? (
             <p className="text-xs text-slate-400">目前沒有可裝備物品。</p>
           ) : (
             player.inventoryEquipment.map((item) => (
               <div key={item.id} className="rounded-lg border border-slate-600/70 bg-slate-900/60 p-2 text-xs">
-                <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-display text-sm text-slate-100">{item.name}</p>
+                <div className="flex items-start gap-2">
+                  <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
+                  <div className="flex-1">
+                    <p className="font-display text-sm text-slate-100">{item.name} (Lv.{item.level})</p>
                     <p className="text-slate-300">{bonusText(item)}</p>
                   </div>
                   <button className="btn-muted px-2 py-1 text-[11px]" onClick={() => onEquip(item.id)}>
@@ -62,7 +70,7 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
         </div>
 
         <div className="space-y-2">
-          <p className="text-xs text-slate-400">已學技能（可切換主動技能）</p>
+          <p className="text-xs text-slate-400">已學技能（切換主動技能）</p>
           <div className="grid gap-2">
             {player.unlockedSkillIds.map((id) => {
               const skill = getSkillById(id);

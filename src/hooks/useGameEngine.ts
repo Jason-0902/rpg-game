@@ -9,6 +9,7 @@ import {
   createLog,
   createPlayerFromClass,
   getActionDisabledReason,
+  getBestPotionTier,
   performTurn,
   resetForNextBoss
 } from '../logic/battle';
@@ -23,6 +24,7 @@ import {
   EquipmentSlot,
   EventCard,
   Player,
+  PotionTier,
   RewardBundle,
   RunSummary
 } from '../types/game';
@@ -55,18 +57,25 @@ const INITIAL_STATE: GameEngineState = {
   lastSummary: null
 };
 
-const MAX_LOGS = 160;
+const MAX_LOGS = 180;
 
 const appendLogs = (origin: BattleLogEntry[], incoming: BattleLogEntry[]): BattleLogEntry[] => {
   const merged = [...origin, ...incoming];
   return merged.length <= MAX_LOGS ? merged : merged.slice(merged.length - MAX_LOGS);
 };
 
+const potionLabel: Record<PotionTier, string> = {
+  minor: '初級',
+  standard: '中級',
+  major: '高級',
+  supreme: '頂級'
+};
+
 const applyEquipBonus = (player: Player, item: EquipmentItem, sign: 1 | -1): Player => {
   const maxHp = Math.max(1, player.maxHp + (item.bonuses.maxHp ?? 0) * sign);
   const atk = Math.max(1, player.atk + (item.bonuses.atk ?? 0) * sign);
   const def = Math.max(0, player.def + (item.bonuses.def ?? 0) * sign);
-  const crit = Math.max(0.05, Math.min(0.95, player.crit + (item.bonuses.crit ?? 0) * sign));
+  const crit = Math.max(0.05, player.crit + (item.bonuses.crit ?? 0) * sign);
 
   return {
     ...player,
@@ -80,9 +89,7 @@ const applyEquipBonus = (player: Player, item: EquipmentItem, sign: 1 | -1): Pla
 
 const equipFromInventory = (player: Player, itemId: string): { player: Player; text: string } => {
   const item = player.inventoryEquipment.find((i) => i.id === itemId);
-  if (!item) {
-    return { player, text: '找不到要裝備的道具。' };
-  }
+  if (!item) return { player, text: '找不到要裝備的道具。' };
 
   let next = { ...player, inventoryEquipment: player.inventoryEquipment.filter((i) => i.id !== itemId) };
   const current = next.equipped[item.slot as EquipmentSlot];
@@ -93,23 +100,64 @@ const equipFromInventory = (player: Player, itemId: string): { player: Player; t
   }
 
   next = applyEquipBonus(next, item, 1);
-  next.equipped = {
-    ...next.equipped,
-    [item.slot]: item
-  };
+  next.equipped = { ...next.equipped, [item.slot]: item };
 
   return { player: next, text: `已裝備 ${item.name}。` };
 };
 
+const rollPotionDrop = (stage: number): { tier: PotionTier; count: number } | null => {
+  if (Math.random() > 0.45) return null;
+  if (stage > 90 && Math.random() < 0.12) return { tier: 'supreme', count: 1 };
+  if (stage > 55 && Math.random() < 0.22) return { tier: 'major', count: 1 };
+  if (stage > 25 && Math.random() < 0.42) return { tier: 'standard', count: 1 };
+  return { tier: 'minor', count: 1 };
+};
+
+const applyRandomKillGrowth = (player: Player) => {
+  const picks = ['atk', 'def', 'crit', 'maxHp'] as const;
+  const count = 1 + Math.floor(Math.random() * 4);
+  const shuffled = [...picks].sort(() => Math.random() - 0.5).slice(0, count);
+
+  let next = { ...player };
+  const lines: string[] = [];
+
+  for (const k of shuffled) {
+    if (k === 'atk') {
+      const v = 1 + Math.floor(Math.random() * 20);
+      next.atk += v;
+      lines.push(`攻擊 +${v}`);
+    }
+    if (k === 'def') {
+      const v = 5 + Math.floor(Math.random() * 46);
+      next.def += v;
+      lines.push(`防禦 +${v}`);
+    }
+    if (k === 'crit') {
+      const v = 1 + Math.floor(Math.random() * 10);
+      next.crit += v / 100;
+      lines.push(`爆擊率 +${v}%`);
+    }
+    if (k === 'maxHp') {
+      const v = 10 + Math.floor(Math.random() * 91);
+      next.maxHp += v;
+      next.hp = Math.min(next.maxHp, next.hp + Math.round(v * 0.5));
+      lines.push(`最大生命 +${v}`);
+    }
+  }
+
+  return { player: next, lines };
+};
+
 const generateReward = (player: Player, stage: number): RewardBundle => {
-  const money = Math.round(20 + stage * 7 + Math.random() * 12);
-  const potion = Math.random() < 0.35 ? 1 : 0;
-  const equipment = Math.random() < 0.42 ? createRandomEquipment(stage) : null;
+  const money = Math.round(22 + stage * 7 + Math.random() * 18);
+  const p = rollPotionDrop(stage);
+  const equipment = Math.random() < 0.44 ? createRandomEquipment(stage) : null;
   const skill = rollSkillDrop(player.classId, player.unlockedSkillIds);
 
   return {
     money,
-    potion,
+    potionTier: p?.tier ?? null,
+    potionCount: p?.count ?? 0,
     equipment,
     skill
   };
@@ -142,19 +190,17 @@ export const useGameEngine = () => {
   useEffect(() => {
     if (!state.player || !state.boss) return;
 
-    saveGameState(
-      {
-        player: state.player,
-        boss: state.boss,
-        logs: state.logs,
-        turn: state.turn,
-        phase: state.phase,
-        level: state.stageLevel,
-        reward: state.reward,
-        shopOffers: state.shopOffers,
-        travelEvent: state.travelEvent
-      }
-    );
+    saveGameState({
+      player: state.player,
+      boss: state.boss,
+      logs: state.logs,
+      turn: state.turn,
+      phase: state.phase,
+      level: state.stageLevel,
+      reward: state.reward,
+      shopOffers: state.shopOffers,
+      travelEvent: state.travelEvent
+    });
   }, [state]);
 
   const startNewRun = useCallback((classId: ClassId) => {
@@ -187,10 +233,10 @@ export const useGameEngine = () => {
     setState((prev) => {
       if (!prev.player || !prev.boss || prev.phase !== 'battle' || prev.actionLock) return prev;
 
-      if (action === 'heal' && prev.player.potions <= 0) {
+      if (action === 'heal' && !getBestPotionTier(prev.player)) {
         return {
           ...prev,
-          logs: appendLogs(prev.logs, [createLog('system', '沒有回復藥水可使用。', 'warning', prev.turn)])
+          logs: appendLogs(prev.logs, [createLog('system', '沒有藥水可使用。', 'warning', prev.turn)])
         };
       }
 
@@ -206,27 +252,30 @@ export const useGameEngine = () => {
       const withOutcomeLogs = appendLogs(prev.logs, outcome.logs);
 
       if (outcome.phase === 'reward') {
-        const progressed = applyVictoryRewards(outcome.player, outcome.boss);
-        const bundle = generateReward(progressed, prev.stageLevel);
-        let rewarded = {
-          ...progressed,
-          gold: progressed.gold + bundle.money,
-          potions: progressed.potions + bundle.potion
-        };
+        let progressed = applyVictoryRewards(outcome.player, outcome.boss);
+        const growth = applyRandomKillGrowth(progressed);
+        progressed = growth.player;
 
+        const bundle = generateReward(progressed, prev.stageLevel);
+        let rewarded = { ...progressed, gold: progressed.gold + bundle.money };
         const rewardLogs: BattleLogEntry[] = [
-          createLog('system', `獲得金錢 ${bundle.money}。`, 'reward', outcome.turn)
+          createLog('system', `獲得金錢 ${bundle.money}。`, 'reward', outcome.turn),
+          createLog('system', `擊殺成長：${growth.lines.join('、')}`, 'buff', outcome.turn)
         ];
 
-        if (bundle.potion > 0) {
-          rewardLogs.push(createLog('system', `獲得回復藥水 x${bundle.potion}。`, 'heal', outcome.turn));
+        if (bundle.potionTier && bundle.potionCount > 0) {
+          rewarded = {
+            ...rewarded,
+            potions: {
+              ...rewarded.potions,
+              [bundle.potionTier]: rewarded.potions[bundle.potionTier] + bundle.potionCount
+            }
+          };
+          rewardLogs.push(createLog('system', `獲得${potionLabel[bundle.potionTier]}藥水 x${bundle.potionCount}。`, 'heal', outcome.turn));
         }
 
         if (bundle.equipment) {
-          rewarded = {
-            ...rewarded,
-            inventoryEquipment: [...rewarded.inventoryEquipment, bundle.equipment]
-          };
+          rewarded = { ...rewarded, inventoryEquipment: [...rewarded.inventoryEquipment, bundle.equipment] };
           rewardLogs.push(createLog('system', `掉落裝備：${bundle.equipment.name}`, 'reward', outcome.turn));
         }
 
@@ -289,14 +338,13 @@ export const useGameEngine = () => {
     setState((prev) => {
       if (!prev.player || !prev.boss) return prev;
 
-      if (Math.random() < 0.3) {
-        const shopOffers = createShopOffers(prev.stageLevel + 1);
+      if (Math.random() < 0.33) {
         return {
           ...prev,
           phase: 'shop',
-          shopOffers,
+          shopOffers: createShopOffers(prev.stageLevel + 1),
           reward: null,
-          logs: appendLogs(prev.logs, [createLog('system', '旅行商人出現了！', 'info', prev.turn)])
+          logs: appendLogs(prev.logs, [createLog('system', '旅行商人隨機出現。', 'info', prev.turn)])
         };
       }
 
@@ -307,7 +355,7 @@ export const useGameEngine = () => {
           phase: 'event',
           travelEvent: ev,
           reward: null,
-          logs: appendLogs(prev.logs, [createLog('system', `旅途事件：${ev.title}`, 'info', prev.turn)])
+          logs: appendLogs(prev.logs, [createLog('system', `遭遇事件：${ev.title}`, 'info', prev.turn)])
         };
       }
 
@@ -353,12 +401,7 @@ export const useGameEngine = () => {
       if (!prev.player) return prev;
       const ev = rollTravelEvent();
       if (ev) {
-        return {
-          ...prev,
-          phase: 'event',
-          travelEvent: ev,
-          shopOffers: []
-        };
+        return { ...prev, phase: 'event', travelEvent: ev, shopOffers: [] };
       }
 
       const nextLevel = prev.stageLevel + 1;
@@ -395,8 +438,8 @@ export const useGameEngine = () => {
           player.activeSkillId = skill.id;
           logText = `你習得了技能 ${skill.name}。`;
         } else {
-          player.potions += 1;
-          logText = '你得到回復藥水 x1。';
+          player.potions.standard += 1;
+          logText = '你得到中級藥水 x1。';
         }
       } else if (e.id === 'ev_bless_armor') {
         player.maxHp += 20;
@@ -483,6 +526,3 @@ export const useGameEngine = () => {
     setActiveSkill
   };
 };
-
-
-

@@ -12,6 +12,10 @@ export type BattleActionId = 'attack' | 'guard' | 'skill' | 'heal';
 
 export type EquipmentSlot = 'head' | 'gloves' | 'weapon' | 'shield' | 'necklace' | 'shoes' | 'armor' | 'legs';
 
+export type PotionTier = 'minor' | 'standard' | 'major' | 'supreme';
+
+export type PotionInventory = Record<PotionTier, number>;
+
 export interface StatBlock {
   hp: number;
   maxHp: number;
@@ -45,6 +49,8 @@ export interface EquipmentItem {
   name: string;
   slot: EquipmentSlot;
   rarity: 'common' | 'rare' | 'epic';
+  level: number;
+  image: string;
   price: number;
   bonuses: {
     maxHp?: number;
@@ -63,7 +69,8 @@ export interface EventCard {
 
 export interface RewardBundle {
   money: number;
-  potion: number;
+  potionTier: PotionTier | null;
+  potionCount: number;
   equipment?: EquipmentItem | null;
   skill?: SkillDefinition | null;
 }
@@ -73,7 +80,7 @@ export interface Player extends StatBlock, RuntimeCombatState {
   exp: number;
   expToNext: number;
   gold: number;
-  potions: number;
+  potions: PotionInventory;
   totalDamageDealt: number;
   totalDamageTaken: number;
   defeatedBosses: number;
@@ -113,6 +120,7 @@ export interface BattleLogEntry {
   timestamp: number;
 }
 
+
 export interface UpgradeOption {
   id: string;
   title: string;
@@ -122,6 +130,23 @@ export interface UpgradeOption {
   apply: (player: Player) => Player;
 }
 
+export interface UpgradeOptionMetadata {
+  id: string;
+  title: string;
+  description: string;
+  rarity: 'common' | 'rare' | 'epic';
+  icon: string;
+}
+
+export interface UpgradeCatalogItem {
+  id: string;
+  title: string;
+  description: string;
+  rarity: 'common' | 'rare' | 'epic';
+  icon: string;
+  apply: (player: Player) => Player;
+  tags: string[];
+}
 export interface BattleSnapshot {
   player: Player;
   boss: Boss;
@@ -158,6 +183,7 @@ export interface ClassTemplate {
   passive: string;
   skillName: string;
   skillDescription: string;
+  avatar: string;
   cardTheme: string;
   base: {
     hp: number;
@@ -194,25 +220,6 @@ export interface PersistedGameState {
   updatedAt: string;
   seed: number;
   snapshot: BattleSnapshot;
-  offeredUpgrades: UpgradeOptionMetadata[];
-}
-
-export interface UpgradeOptionMetadata {
-  id: string;
-  title: string;
-  description: string;
-  rarity: 'common' | 'rare' | 'epic';
-  icon: string;
-}
-
-export interface UpgradeCatalogItem {
-  id: string;
-  title: string;
-  description: string;
-  rarity: 'common' | 'rare' | 'epic';
-  icon: string;
-  apply: (player: Player) => Player;
-  tags: string[];
 }
 
 export interface BossIntent {
@@ -239,6 +246,7 @@ export interface RunSummary {
 }
 
 export const STORAGE_KEYS = {
-  gameState: 'rpg_boss_battle_state_v2',
-  runSummary: 'rpg_boss_battle_last_run_v2'
+  gameState: 'rpg_boss_battle_state_v3',
+  runSummary: 'rpg_boss_battle_last_run_v3'
 } as const;
+

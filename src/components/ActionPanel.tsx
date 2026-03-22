@@ -12,16 +12,18 @@ const actions: { id: BattleActionId; label: string; description: string }[] = [
   { id: 'attack', label: '攻擊', description: '一般攻擊，穩定輸出。' },
   { id: 'guard', label: '防禦', description: '提高減傷並獲得護盾。' },
   { id: 'skill', label: '技能', description: '施放目前主動技能。' },
-  { id: 'heal', label: '使用藥水', description: '消耗 1 瓶藥水恢復生命。' }
+  { id: 'heal', label: '使用藥水', description: '自動使用最高等級藥水恢復生命。' }
 ];
 
 const ActionPanel = ({ player, disabled, onAction }: ActionPanelProps) => {
+  const potionTotal = player.potions.minor + player.potions.standard + player.potions.major + player.potions.supreme;
+
   return (
-    <Panel title="行動面板" subtitle="回復生命只能透過藥水道具">
+    <Panel title="行動面板" subtitle={`回復生命只能透過藥水道具（目前 ${potionTotal} 瓶）`}>
       <div className="grid gap-3 md:grid-cols-2">
         {actions.map((action) => {
           const lockByCooldown = action.id === 'skill' && player.skillCooldown > 0;
-          const lockByPotion = action.id === 'heal' && player.potions <= 0;
+          const lockByPotion = action.id === 'heal' && potionTotal <= 0;
           const lock = disabled || lockByCooldown || lockByPotion;
 
           return (

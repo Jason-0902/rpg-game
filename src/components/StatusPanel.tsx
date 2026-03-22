@@ -24,8 +24,12 @@ const StatusPanel = ({ player, boss }: StatusPanelProps) => {
     <div className="grid gap-4 xl:grid-cols-2">
       <Panel title={`玩家 - ${template.name}`} subtitle={`等級 ${player.level} | 已擊敗 ${player.defeatedBosses} 隻怪物`}>
         <div className="space-y-3">
+          <div className="overflow-hidden rounded-xl border border-slate-600/70">
+            <img src={template.avatar} alt={template.name} className="h-28 w-full object-cover" />
+          </div>
           <ResourceBar value={player.hp} max={player.maxHp} color="hp" label="生命" />
           <ResourceBar value={player.shield} max={Math.max(1, player.maxHp * 0.55)} color="shield" label="護盾" />
+          <ResourceBar value={player.exp} max={player.expToNext} color="mana" label="職業經驗值" />
 
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
             <StatCell label="攻擊" value={player.atk + player.atkBuff} />
@@ -34,18 +38,16 @@ const StatusPanel = ({ player, boss }: StatusPanelProps) => {
             <StatCell label="金錢" value={player.gold} />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="stat-chip">藥水：{player.potions}</div>
-            <div className="stat-chip">目前技能：{player.activeSkillId}</div>
+          <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-4">
+            <div className="stat-chip">初級藥水：{player.potions.minor}</div>
+            <div className="stat-chip">中級藥水：{player.potions.standard}</div>
+            <div className="stat-chip">高級藥水：{player.potions.major}</div>
+            <div className="stat-chip">頂級藥水：{player.potions.supreme}</div>
           </div>
         </div>
       </Panel>
 
-      <Panel
-        title={`怪物 - ${boss.emoji} ${boss.name}`}
-        subtitle={`${boss.title} | 危險等級 ${boss.level}`}
-        className={boss.enraged ? 'border-red-400/80' : ''}
-      >
+      <Panel title={`怪物 - ${boss.emoji} ${boss.name}`} subtitle={`${boss.title} | 危險等級 ${boss.level}`} className={boss.enraged ? 'border-red-400/80' : ''}>
         <div className="space-y-3">
           <div className="overflow-hidden rounded-xl border border-slate-600/70">
             <img src={boss.portrait} alt={boss.name} className="h-36 w-full object-cover" />

@@ -1,4 +1,5 @@
-﻿import { ClassTemplate } from '../types/game';
+﻿import { generateClassAvatar } from '../logic/imageGen';
+import { ClassTemplate } from '../types/game';
 
 export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
   warrior: {
@@ -9,6 +10,7 @@ export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
     passive: '守護本能：防禦生效倍率提高。',
     skillName: '鋼鐵堡壘',
     skillDescription: '獲得高額護盾，下一次受到傷害額外降低。',
+    avatar: generateClassAvatar('warrior', '戰士'),
     cardTheme: 'hero-card-warrior',
     base: {
       hp: 160,
@@ -31,6 +33,7 @@ export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
     passive: '元素精通：爆擊時追加法術殘響。',
     skillName: '奧術新星',
     skillDescription: '對首領造成高傷害並短暫降低其防禦。',
+    avatar: generateClassAvatar('mage', '法師'),
     cardTheme: 'hero-card-mage',
     base: {
       hp: 110,
@@ -53,6 +56,7 @@ export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
     passive: '致命節奏：連續攻擊會提升爆擊率。',
     skillName: '暗影連斬',
     skillDescription: '連續刺擊，會根據爆擊率獲得額外段數。',
+    avatar: generateClassAvatar('assassin', '刺客'),
     cardTheme: 'hero-card-assassin',
     base: {
       hp: 125,
@@ -68,4 +72,3 @@ export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
     }
   }
 };
-

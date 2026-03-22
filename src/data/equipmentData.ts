@@ -1,56 +1,65 @@
-﻿import { EquipmentItem, EquipmentSlot } from '../types/game';
+﻿import { generateEquipmentImage } from '../logic/imageGen';
+import { EquipmentItem, EquipmentSlot } from '../types/game';
 
 const slotNames: Record<EquipmentSlot, string> = {
-  head: '頭',
+  head: '頭盔',
   gloves: '手套',
   weapon: '武器',
   shield: '盾牌',
   necklace: '項鍊',
   shoes: '鞋子',
   armor: '衣服',
-  legs: '腿'
+  legs: '護腿'
 };
 
 const randomFrom = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
 
-const bonus = (stage: number) => {
-  const base = Math.max(1, Math.floor(stage / 5));
-  return {
-    hp: 8 + base * 4,
-    atk: 2 + Math.floor(base / 2),
-    def: 2 + Math.floor(base / 2),
-    crit: 0.01 + base * 0.003
-  };
+const rollLevelByStage = (stage: number) => {
+  const base = Math.max(1, Math.floor(stage / 4));
+  const spread = Math.max(1, Math.floor(stage / 10) + 1);
+  return base + Math.floor(Math.random() * spread);
+};
+
+const rollRarity = (stage: number): EquipmentItem['rarity'] => {
+  const r = Math.random();
+  const epicGate = 0.03 + Math.min(0.27, stage * 0.0035);
+  const rareGate = 0.28 + Math.min(0.42, stage * 0.0045);
+  if (r < epicGate) return 'epic';
+  if (r < rareGate) return 'rare';
+  return 'common';
 };
 
 export const createRandomEquipment = (stage: number): EquipmentItem => {
   const slots: EquipmentSlot[] = ['head', 'gloves', 'weapon', 'shield', 'necklace', 'shoes', 'armor', 'legs'];
   const slot = randomFrom(slots);
-  const b = bonus(stage);
-  const rarityRoll = Math.random();
-  const rarity = rarityRoll > 0.9 ? 'epic' : rarityRoll > 0.62 ? 'rare' : 'common';
-  const mult = rarity === 'epic' ? 2 : rarity === 'rare' ? 1.45 : 1;
-  const id = `eq-${slot}-${stage}-${Math.random().toString(36).slice(2, 7)}`;
+  const level = rollLevelByStage(stage);
+  const rarity = rollRarity(stage);
+  const rarityMult = rarity === 'epic' ? 2.2 : rarity === 'rare' ? 1.55 : 1;
+  const growth = 1 + level * 0.2;
+
+  const id = `eq-${slot}-${stage}-${Math.random().toString(36).slice(2, 8)}`;
 
   const item: EquipmentItem = {
     id,
     slot,
+    level,
     rarity,
-    name: `${slotNames[slot]}・${rarity === 'epic' ? '傳說' : rarity === 'rare' ? '精鍊' : '旅者'}`,
-    price: Math.round((25 + stage * 4) * mult),
+    image: generateEquipmentImage(slot, level, rarity),
+    name: `${slotNames[slot]}・Lv${level}`,
+    price: Math.round((20 + level * 8 + stage * 2) * rarityMult),
     bonuses: {}
   };
 
-  if (slot === 'weapon') item.bonuses.atk = Math.round(b.atk * mult + 2);
-  if (slot === 'shield') item.bonuses.def = Math.round(b.def * mult + 2);
-  if (slot === 'head' || slot === 'armor' || slot === 'legs') item.bonuses.maxHp = Math.round(b.hp * mult);
+  if (slot === 'weapon') item.bonuses.atk = Math.round((8 + level * 2.2) * rarityMult);
+  if (slot === 'shield') item.bonuses.def = Math.round((10 + level * 2.8) * rarityMult);
+  if (slot === 'head' || slot === 'armor' || slot === 'legs') item.bonuses.maxHp = Math.round((24 + level * 8) * rarityMult);
   if (slot === 'gloves' || slot === 'necklace') {
-    item.bonuses.crit = Number((b.crit * mult).toFixed(3));
-    item.bonuses.atk = Math.round((b.atk * 0.7) * mult);
+    item.bonuses.crit = Number((0.01 * growth * rarityMult).toFixed(3));
+    item.bonuses.atk = Math.round((4 + level * 1.4) * rarityMult);
   }
   if (slot === 'shoes') {
-    item.bonuses.def = Math.round((b.def * 0.65) * mult);
-    item.bonuses.crit = Number((b.crit * 0.6 * mult).toFixed(3));
+    item.bonuses.def = Math.round((5 + level * 1.8) * rarityMult);
+    item.bonuses.crit = Number((0.006 * growth * rarityMult).toFixed(3));
   }
 
   return item;
