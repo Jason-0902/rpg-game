@@ -3,11 +3,11 @@
 export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
   warrior: {
     id: 'warrior',
-    name: 'Warrior',
-    short: 'WR',
+    name: '戰士',
+    short: '戰',
     description: '前線坦克，血量與防禦最高，能在長期戰鬥中穩定輸出。',
     passive: '守護本能：防禦生效倍率提高。',
-    skillName: 'Iron Bastion',
+    skillName: '鋼鐵堡壘',
     skillDescription: '獲得高額護盾，下一次受到傷害額外降低。',
     cardTheme: 'hero-card-warrior',
     base: {
@@ -25,12 +25,12 @@ export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
   },
   mage: {
     id: 'mage',
-    name: 'Mage',
-    short: 'MG',
+    name: '法師',
+    short: '法',
     description: '法術爆發職業，攻擊與技能倍率極高但防禦薄弱。',
     passive: '元素精通：爆擊時追加法術殘響。',
-    skillName: 'Arcane Nova',
-    skillDescription: '對 Boss 造成高傷害並短暫降低其防禦。',
+    skillName: '奧術新星',
+    skillDescription: '對首領造成高傷害並短暫降低其防禦。',
     cardTheme: 'hero-card-mage',
     base: {
       hp: 110,
@@ -47,11 +47,11 @@ export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
   },
   assassin: {
     id: 'assassin',
-    name: 'Assassin',
-    short: 'AS',
+    name: '刺客',
+    short: '刺',
     description: '高速斬殺，爆擊率高，透過連擊與瞬間爆發收頭。',
     passive: '致命節奏：連續攻擊會提升爆擊率。',
-    skillName: 'Shadow Flurry',
+    skillName: '暗影連斬',
     skillDescription: '連續刺擊，會根據爆擊率獲得額外段數。',
     cardTheme: 'hero-card-assassin',
     base: {
@@ -68,3 +68,4 @@ export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
     }
   }
 };
+

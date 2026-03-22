@@ -42,6 +42,7 @@ export interface Player extends StatBlock, RuntimeCombatState {
 
 export interface Boss extends StatBlock, RuntimeCombatState {
   id: string;
+  emoji: string;
   name: string;
   title: string;
   stage: number;
@@ -133,6 +134,7 @@ export interface ClassTemplate {
 }
 
 export interface BossTemplate {
+  emoji: string;
   name: string;
   title: string;
   baseHp: number;
@@ -221,3 +223,4 @@ export const STORAGE_KEYS = {
   gameState: 'rpg_boss_battle_state_v1',
   runSummary: 'rpg_boss_battle_last_run'
 } as const;
+

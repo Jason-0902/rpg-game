@@ -1,5 +1,6 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CLASS_TEMPLATES } from '../data/classData';
+import { getUpgradeZh } from '../data/upgradeTextsZh';
 import { createUpgradeOptions, upgradeOptionsToMetadata } from '../data/upgradePool';
 import {
   applyVictoryRewards,
@@ -106,8 +107,8 @@ export const useGameEngine = () => {
     const player = createPlayerFromClass(classId);
     const boss = createBossForLevel(1);
     const logs = [
-      createLog('system', `Run started as ${CLASS_TEMPLATES[classId].name}.`, 'info', 1),
-      createLog('system', `A wild ${boss.name}, ${boss.title}, appears.`, 'warning', 1)
+      createLog('system', `你選擇了「${CLASS_TEMPLATES[classId].name}」，試煉開始。`, 'info', 1),
+      createLog('system', `${boss.emoji} ${boss.name}（${boss.title}）現身了！`, 'warning', 1)
     ];
 
     setSeed(Date.now());
@@ -133,50 +134,6 @@ export const useGameEngine = () => {
     }));
   }, []);
 
-  const nextStage = useCallback(
-    (player: Player, nextLevel: number, logs: BattleLogEntry[]) => {
-      const freshPlayer = resetForNextBoss(player);
-      const nextBoss = createBossForLevel(nextLevel);
-
-      const stageLogs = appendLogs(logs, [
-        createLog('system', `Stage ${nextLevel}: ${nextBoss.name} enters the arena.`, 'warning', 1)
-      ]);
-
-      setState((prev) => ({
-        ...prev,
-        player: freshPlayer,
-        boss: nextBoss,
-        logs: stageLogs,
-        phase: 'battle',
-        stageLevel: nextLevel,
-        turn: 1,
-        upgrades: [],
-        actionLock: false
-      }));
-    },
-    []
-  );
-
-  const commitDefeat = useCallback((player: Player, stageLevel: number) => {
-    const summary: RunSummary = {
-      highestLevel: stageLevel,
-      bossesDefeated: player.defeatedBosses,
-      totalDamageDealt: player.totalDamageDealt,
-      totalDamageTaken: player.totalDamageTaken,
-      classId: player.classId,
-      completedAt: new Date().toISOString()
-    };
-
-    saveRunSummary(summary);
-
-    setState((prev) => ({
-      ...prev,
-      phase: 'defeat',
-      lastSummary: summary,
-      actionLock: false
-    }));
-  }, []);
-
   const runAction = useCallback(
     (action: BattleActionId) => {
       setState((prev) => {
@@ -199,9 +156,7 @@ export const useGameEngine = () => {
         if (outcome.phase === 'upgrade') {
           const rewardedPlayer = applyVictoryRewards(outcome.player, outcome.boss);
           const options = createUpgradeOptions(rewardedPlayer, rng, 3);
-          const logs = appendLogs(withOutcomeLogs, [
-            createLog('system', `Victory! Choose an upgrade before Stage ${prev.stageLevel + 1}.`, 'reward', outcome.turn)
-          ]);
+          const logs = appendLogs(withOutcomeLogs, [createLog('system', `勝利！請在進入第 ${prev.stageLevel + 1} 層前選擇一項升級。`, 'reward', outcome.turn)]);
 
           return {
             ...prev,
@@ -216,9 +171,7 @@ export const useGameEngine = () => {
         }
 
         if (outcome.phase === 'defeat') {
-          const logs = appendLogs(withOutcomeLogs, [
-            createLog('system', 'Your journey ends here. Press Restart to begin again.', 'warning', outcome.turn)
-          ]);
+          const logs = appendLogs(withOutcomeLogs, [createLog('system', '你的旅程在此結束，按下重新開始可再戰。', 'warning', outcome.turn)]);
 
           const summary: RunSummary = {
             highestLevel: prev.stageLevel,
@@ -256,43 +209,39 @@ export const useGameEngine = () => {
     [rng]
   );
 
-  const chooseUpgrade = useCallback(
-    (optionId: string) => {
-      setState((prev) => {
-        if (prev.phase !== 'upgrade' || !prev.player) {
-          return prev;
-        }
+  const chooseUpgrade = useCallback((optionId: string) => {
+    setState((prev) => {
+      if (prev.phase !== 'upgrade' || !prev.player) {
+        return prev;
+      }
 
-        const selected = prev.upgrades.find((item) => item.id === optionId);
-        if (!selected) {
-          return prev;
-        }
+      const selected = prev.upgrades.find((item) => item.id === optionId);
+      if (!selected) {
+        return prev;
+      }
 
-        const nextPlayer = selected.apply(prev.player);
-        const nextLevel = prev.stageLevel + 1;
-        const logs = appendLogs(prev.logs, [
-          createLog('system', `Upgrade acquired: ${selected.title}`, 'reward', prev.turn),
-          createLog('system', 'A stronger foe is approaching...', 'warning', prev.turn)
-        ]);
+      const nextPlayer = selected.apply(prev.player);
+      const nextLevel = prev.stageLevel + 1;
+      const zh = getUpgradeZh(selected.id, selected.title, selected.description);
+      const logs = appendLogs(prev.logs, [
+        createLog('system', `已獲得升級：「${zh.title}」`, 'reward', prev.turn),
+        createLog('system', '更強的敵人正在逼近…', 'warning', prev.turn)
+      ]);
 
-        const nextBoss = createBossForLevel(nextLevel);
+      const nextBoss = createBossForLevel(nextLevel);
 
-        return {
-          ...prev,
-          player: resetForNextBoss(nextPlayer),
-          boss: nextBoss,
-          logs: appendLogs(logs, [
-            createLog('system', `Stage ${nextLevel} starts. ${nextBoss.name} descends.`, 'warning', 1)
-          ]),
-          stageLevel: nextLevel,
-          phase: 'battle',
-          turn: 1,
-          upgrades: []
-        };
-      });
-    },
-    []
-  );
+      return {
+        ...prev,
+        player: resetForNextBoss(nextPlayer),
+        boss: nextBoss,
+        logs: appendLogs(logs, [createLog('system', `第 ${nextLevel} 層開始！${nextBoss.emoji} ${nextBoss.name} 降臨。`, 'warning', 1)]),
+        stageLevel: nextLevel,
+        phase: 'battle',
+        turn: 1,
+        upgrades: []
+      };
+    });
+  }, []);
 
   const canLoad = state.phase !== 'classSelection' && Boolean(state.player && state.boss);
 
@@ -301,14 +250,14 @@ export const useGameEngine = () => {
       return {
         className: null,
         bossName: null,
-        stageLabel: 'Stage 1'
+        stageLabel: '第 1 層'
       };
     }
 
     return {
       className: CLASS_TEMPLATES[state.player.classId].name,
-      bossName: `${state.boss.name} - ${state.boss.title}`,
-      stageLabel: `Stage ${state.stageLevel}`
+      bossName: `${state.boss.emoji} ${state.boss.name}・${state.boss.title}`,
+      stageLabel: `第 ${state.stageLevel} 層`
     };
   }, [state.player, state.boss, state.stageLevel]);
 
@@ -338,8 +287,6 @@ export const useGameEngine = () => {
     startNewRun,
     restartRun,
     runAction,
-    chooseUpgrade,
-    nextStage,
-    commitDefeat
+    chooseUpgrade
   };
 };

@@ -41,25 +41,17 @@ const App = () => {
               <section className="space-y-4">
                 <StatusPanel player={state.player} boss={state.boss} />
 
-                {state.phase === 'battle' ? (
-                  <ActionPanel
-                    player={state.player}
-                    disabled={state.actionLock}
-                    onAction={runAction}
-                  />
-                ) : null}
+                {state.phase === 'battle' ? <ActionPanel player={state.player} disabled={state.actionLock} onAction={runAction} /> : null}
 
                 {state.phase === 'upgrade' ? <UpgradePanel options={state.upgrades} onPick={chooseUpgrade} /> : null}
 
                 {state.phase === 'defeat' ? (
                   <div className="panel">
-                    <h3 className="panel-title text-red-200">Run Failed</h3>
-                    <p className="mt-2 text-sm text-slate-200">
-                      你在 Stage {state.stageLevel} 被擊敗。可以直接重開，或回主畫面更換職業再戰。
-                    </p>
+                    <h3 className="panel-title text-red-200">挑戰失敗</h3>
+                    <p className="mt-2 text-sm text-slate-200">你在第 {state.stageLevel} 層被擊敗。可以直接重開，或回主畫面更換職業再戰。</p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <button type="button" className="btn-primary" onClick={restartRun}>
-                        Back To Class Selection
+                        返回職業選擇
                       </button>
                     </div>
                   </div>

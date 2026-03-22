@@ -81,6 +81,7 @@ export const createBossForLevel = (level: number): Boss => {
 
   return {
     id: `boss-${level}-${template.name.toLowerCase().replace(/\s/g, '-')}`,
+    emoji: template.emoji,
     name: template.name,
     title: template.title,
     stage: level,
@@ -607,3 +608,4 @@ export const getActionDisabledReason = (action: BattleActionId, player: Player):
 
   return null;
 };
+

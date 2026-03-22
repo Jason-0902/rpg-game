@@ -2,8 +2,9 @@
 
 export const BOSS_TEMPLATES: BossTemplate[] = [
   {
-    name: 'Ashfang',
-    title: 'Flame Warden',
+    emoji: '😤',
+    name: '燼牙',
+    title: '烈焰看守者',
     baseHp: 130,
     baseAtk: 20,
     baseDef: 6,
@@ -16,8 +17,9 @@ export const BOSS_TEMPLATES: BossTemplate[] = [
     enrageBonus: 0.2
   },
   {
-    name: 'Dreadmire',
-    title: 'Bog Tyrant',
+    emoji: '🤢',
+    name: '腐沼霸主',
+    title: '泥潭暴君',
     baseHp: 145,
     baseAtk: 18,
     baseDef: 9,
@@ -30,8 +32,9 @@ export const BOSS_TEMPLATES: BossTemplate[] = [
     enrageBonus: 0.25
   },
   {
-    name: 'Cinderskull',
-    title: 'Skull of Ember',
+    emoji: '💀',
+    name: '灰燼骷王',
+    title: '餘燼骷髏首領',
     baseHp: 120,
     baseAtk: 25,
     baseDef: 5,
@@ -44,8 +47,9 @@ export const BOSS_TEMPLATES: BossTemplate[] = [
     enrageBonus: 0.22
   },
   {
-    name: 'Abyss Herald',
-    title: 'Voice of the Rift',
+    emoji: '👁️',
+    name: '深淵傳令官',
+    title: '裂隙之聲',
     baseHp: 150,
     baseAtk: 19,
     baseDef: 8,
@@ -58,8 +62,9 @@ export const BOSS_TEMPLATES: BossTemplate[] = [
     enrageBonus: 0.26
   },
   {
-    name: 'Storm Colossus',
-    title: 'Titan of Thunder',
+    emoji: '⚡',
+    name: '雷霆巨像',
+    title: '轟雷泰坦',
     baseHp: 165,
     baseAtk: 21,
     baseDef: 10,
@@ -72,8 +77,9 @@ export const BOSS_TEMPLATES: BossTemplate[] = [
     enrageBonus: 0.2
   },
   {
-    name: 'Night Sovereign',
-    title: 'King of Eclipse',
+    emoji: '🌑',
+    name: '夜蝕君主',
+    title: '蝕夜之王',
     baseHp: 175,
     baseAtk: 24,
     baseDef: 11,

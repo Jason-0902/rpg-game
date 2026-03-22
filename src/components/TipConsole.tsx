@@ -6,6 +6,13 @@ interface TipConsoleProps {
   stageLevel: number;
 }
 
+const categoryName: Record<string, string> = {
+  combat: '戰鬥',
+  upgrade: '升級',
+  boss: '首領',
+  class: '職業'
+};
+
 const TipConsole = ({ stageLevel }: TipConsoleProps) => {
   const tips = useMemo(() => {
     const start = ((stageLevel - 1) * 3) % CODEX_TIPS.length;
@@ -17,11 +24,11 @@ const TipConsole = ({ stageLevel }: TipConsoleProps) => {
   }, [stageLevel]);
 
   return (
-    <Panel title="Tactical Codex" subtitle="每層提供三條建議，協助你調整策略。">
+    <Panel title="戰術手冊" subtitle="每層提供三條建議，協助你調整策略。">
       <div className="space-y-2">
         {tips.map((tip) => (
           <div key={tip.id} className="rounded-lg border border-slate-600/70 bg-slate-900/60 px-3 py-2 text-xs">
-            <p className="mb-1 font-display text-[11px] uppercase tracking-wider text-cyan-200">{tip.category}</p>
+            <p className="mb-1 font-display text-[11px] uppercase tracking-wider text-cyan-200">{categoryName[tip.category] ?? tip.category}</p>
             <p className="text-slate-200">{tip.text}</p>
           </div>
         ))}
