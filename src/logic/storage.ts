@@ -1,24 +1,14 @@
-﻿import {
-  PersistedGameState,
-  RunSummary,
-  STORAGE_KEYS,
-  UpgradeOption,
-  UpgradeOptionMetadata
-} from '../types/game';
-import { materializeUpgrade } from '../data/upgradePool';
+﻿import { PersistedGameState, RunSummary, STORAGE_KEYS } from '../types/game';
 
-const STATE_VERSION = 1;
+const STATE_VERSION = 2;
 
-export const saveGameState = (
-  snapshot: PersistedGameState['snapshot'],
-  offeredUpgrades: UpgradeOptionMetadata[]
-): void => {
+export const saveGameState = (snapshot: PersistedGameState['snapshot']): void => {
   const payload: PersistedGameState = {
     version: STATE_VERSION,
     updatedAt: new Date().toISOString(),
     seed: Date.now(),
     snapshot,
-    offeredUpgrades
+    offeredUpgrades: []
   };
 
   localStorage.setItem(STORAGE_KEYS.gameState, JSON.stringify(payload));
@@ -26,7 +16,6 @@ export const saveGameState = (
 
 export const loadGameState = (): {
   snapshot: PersistedGameState['snapshot'];
-  offeredUpgrades: UpgradeOption[];
 } | null => {
   const raw = localStorage.getItem(STORAGE_KEYS.gameState);
   if (!raw) {
@@ -40,11 +29,8 @@ export const loadGameState = (): {
       return null;
     }
 
-    const offeredUpgrades = (parsed.offeredUpgrades ?? []).map((meta) => materializeUpgrade(meta));
-
     return {
-      snapshot: parsed.snapshot,
-      offeredUpgrades
+      snapshot: parsed.snapshot
     };
   } catch (error) {
     console.error('Failed to parse saved state:', error);

@@ -3,11 +3,14 @@
 export type BattlePhase =
   | 'classSelection'
   | 'battle'
-  | 'upgrade'
-  | 'victory'
+  | 'reward'
+  | 'shop'
+  | 'event'
   | 'defeat';
 
 export type BattleActionId = 'attack' | 'guard' | 'skill' | 'heal';
+
+export type EquipmentSlot = 'head' | 'gloves' | 'weapon' | 'shield' | 'necklace' | 'shoes' | 'armor' | 'legs';
 
 export interface StatBlock {
   hp: number;
@@ -30,14 +33,54 @@ export interface RuntimeCombatState {
   combo: number;
 }
 
+export interface SkillDefinition {
+  id: string;
+  classId: ClassId;
+  name: string;
+  description: string;
+}
+
+export interface EquipmentItem {
+  id: string;
+  name: string;
+  slot: EquipmentSlot;
+  rarity: 'common' | 'rare' | 'epic';
+  price: number;
+  bonuses: {
+    maxHp?: number;
+    atk?: number;
+    def?: number;
+    crit?: number;
+  };
+}
+
+export interface EventCard {
+  id: string;
+  title: string;
+  description: string;
+  polarity: 'positive' | 'negative';
+}
+
+export interface RewardBundle {
+  money: number;
+  potion: number;
+  equipment?: EquipmentItem | null;
+  skill?: SkillDefinition | null;
+}
+
 export interface Player extends StatBlock, RuntimeCombatState {
   classId: ClassId;
   exp: number;
   expToNext: number;
-  runes: number;
+  gold: number;
+  potions: number;
   totalDamageDealt: number;
   totalDamageTaken: number;
   defeatedBosses: number;
+  unlockedSkillIds: string[];
+  activeSkillId: string;
+  equipped: Record<EquipmentSlot, EquipmentItem | null>;
+  inventoryEquipment: EquipmentItem[];
 }
 
 export interface Boss extends StatBlock, RuntimeCombatState {
@@ -46,10 +89,11 @@ export interface Boss extends StatBlock, RuntimeCombatState {
   name: string;
   title: string;
   stage: number;
+  portrait: string;
   enrageThreshold: number;
   enrageBonus: number;
   enraged: boolean;
-  dropRunes: number;
+  dropGold: number;
 }
 
 export interface BattleLogEntry {
@@ -85,13 +129,9 @@ export interface BattleSnapshot {
   turn: number;
   phase: BattlePhase;
   level: number;
-}
-
-export interface BattleContext {
-  player: Player;
-  boss: Boss;
-  turn: number;
-  rngSeed?: number;
+  reward: RewardBundle | null;
+  shopOffers: EquipmentItem[];
+  travelEvent: EventCard | null;
 }
 
 export interface DamageResult {
@@ -175,13 +215,6 @@ export interface UpgradeCatalogItem {
   tags: string[];
 }
 
-export interface ActionButtonConfig {
-  id: BattleActionId;
-  label: string;
-  description: string;
-  cooldownHint?: string;
-}
-
 export interface BossIntent {
   id: 'strike' | 'heavy' | 'focus' | 'drain';
   label: string;
@@ -196,13 +229,6 @@ export interface CombatNumbers {
   minimumDamage: number;
 }
 
-export interface UiToast {
-  id: string;
-  title: string;
-  message: string;
-  level: 'info' | 'success' | 'warning';
-}
-
 export interface RunSummary {
   highestLevel: number;
   bossesDefeated: number;
@@ -212,15 +238,7 @@ export interface RunSummary {
   completedAt: string;
 }
 
-export type ActionAvailability = {
-  attack: boolean;
-  guard: boolean;
-  skill: boolean;
-  heal: boolean;
-};
-
 export const STORAGE_KEYS = {
-  gameState: 'rpg_boss_battle_state_v1',
-  runSummary: 'rpg_boss_battle_last_run'
+  gameState: 'rpg_boss_battle_state_v2',
+  runSummary: 'rpg_boss_battle_last_run_v2'
 } as const;
-

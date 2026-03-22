@@ -8,24 +8,21 @@ interface ActionPanelProps {
   onAction: (action: BattleActionId) => void;
 }
 
-const actions: {
-  id: BattleActionId;
-  label: string;
-  description: string;
-}[] = [
+const actions: { id: BattleActionId; label: string; description: string }[] = [
   { id: 'attack', label: '攻擊', description: '一般攻擊，穩定輸出。' },
   { id: 'guard', label: '防禦', description: '提高減傷並獲得護盾。' },
-  { id: 'skill', label: '技能', description: '職業技能，強力但有冷卻。' },
-  { id: 'heal', label: '調息', description: '回復生命並調整節奏。' }
+  { id: 'skill', label: '技能', description: '施放目前主動技能。' },
+  { id: 'heal', label: '使用藥水', description: '消耗 1 瓶藥水恢復生命。' }
 ];
 
 const ActionPanel = ({ player, disabled, onAction }: ActionPanelProps) => {
   return (
-    <Panel title="行動面板" subtitle="選擇本回合行動">
+    <Panel title="行動面板" subtitle="回復生命只能透過藥水道具">
       <div className="grid gap-3 md:grid-cols-2">
         {actions.map((action) => {
-          const lockByCooldown = (action.id === 'skill' || action.id === 'heal') && player.skillCooldown > 0;
-          const lock = disabled || lockByCooldown;
+          const lockByCooldown = action.id === 'skill' && player.skillCooldown > 0;
+          const lockByPotion = action.id === 'heal' && player.potions <= 0;
+          const lock = disabled || lockByCooldown || lockByPotion;
 
           return (
             <motion.button
@@ -42,6 +39,7 @@ const ActionPanel = ({ player, disabled, onAction }: ActionPanelProps) => {
               <p className="font-display text-base uppercase tracking-[0.1em]">{action.label}</p>
               <p className="mt-1 text-xs text-slate-300">{action.description}</p>
               {lockByCooldown ? <p className="mt-2 text-[11px] uppercase tracking-wider text-amber-200">冷卻 {player.skillCooldown} 回合</p> : null}
+              {lockByPotion ? <p className="mt-2 text-[11px] uppercase tracking-wider text-red-200">藥水不足</p> : null}
             </motion.button>
           );
         })}

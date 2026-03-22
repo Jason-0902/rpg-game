@@ -1,7 +1,8 @@
 ﻿import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CLASS_TEMPLATES } from '../data/classData';
-import { getUpgradeZh } from '../data/upgradeTextsZh';
-import { createUpgradeOptions, upgradeOptionsToMetadata } from '../data/upgradePool';
+import { createRandomEquipment, createShopOffers } from '../data/equipmentData';
+import { rollTravelEvent } from '../data/eventData';
+import { getSkillById, rollSkillDrop } from '../data/skillData';
 import {
   applyVictoryRewards,
   createBossForLevel,
@@ -12,16 +13,18 @@ import {
   resetForNextBoss
 } from '../logic/battle';
 import { clearGameState, loadGameState, loadRunSummary, saveGameState, saveRunSummary } from '../logic/storage';
-import { createSeededRng } from '../logic/utils';
 import {
   BattleActionId,
   BattleLogEntry,
   BattlePhase,
   Boss,
   ClassId,
+  EquipmentItem,
+  EquipmentSlot,
+  EventCard,
   Player,
-  RunSummary,
-  UpgradeOption
+  RewardBundle,
+  RunSummary
 } from '../types/game';
 
 export interface GameEngineState {
@@ -31,8 +34,10 @@ export interface GameEngineState {
   phase: BattlePhase;
   stageLevel: number;
   turn: number;
-  upgrades: UpgradeOption[];
   actionLock: boolean;
+  reward: RewardBundle | null;
+  shopOffers: EquipmentItem[];
+  travelEvent: EventCard | null;
   lastSummary: RunSummary | null;
 }
 
@@ -43,35 +48,82 @@ const INITIAL_STATE: GameEngineState = {
   phase: 'classSelection',
   stageLevel: 1,
   turn: 1,
-  upgrades: [],
   actionLock: false,
+  reward: null,
+  shopOffers: [],
+  travelEvent: null,
   lastSummary: null
 };
 
-const MAX_LOGS = 120;
+const MAX_LOGS = 160;
 
 const appendLogs = (origin: BattleLogEntry[], incoming: BattleLogEntry[]): BattleLogEntry[] => {
   const merged = [...origin, ...incoming];
-  if (merged.length <= MAX_LOGS) {
-    return merged;
+  return merged.length <= MAX_LOGS ? merged : merged.slice(merged.length - MAX_LOGS);
+};
+
+const applyEquipBonus = (player: Player, item: EquipmentItem, sign: 1 | -1): Player => {
+  const maxHp = Math.max(1, player.maxHp + (item.bonuses.maxHp ?? 0) * sign);
+  const atk = Math.max(1, player.atk + (item.bonuses.atk ?? 0) * sign);
+  const def = Math.max(0, player.def + (item.bonuses.def ?? 0) * sign);
+  const crit = Math.max(0.05, Math.min(0.95, player.crit + (item.bonuses.crit ?? 0) * sign));
+
+  return {
+    ...player,
+    maxHp,
+    hp: Math.min(maxHp, player.hp),
+    atk,
+    def,
+    crit
+  };
+};
+
+const equipFromInventory = (player: Player, itemId: string): { player: Player; text: string } => {
+  const item = player.inventoryEquipment.find((i) => i.id === itemId);
+  if (!item) {
+    return { player, text: '找不到要裝備的道具。' };
   }
 
-  return merged.slice(merged.length - MAX_LOGS);
+  let next = { ...player, inventoryEquipment: player.inventoryEquipment.filter((i) => i.id !== itemId) };
+  const current = next.equipped[item.slot as EquipmentSlot];
+
+  if (current) {
+    next = applyEquipBonus(next, current, -1);
+    next.inventoryEquipment = [...next.inventoryEquipment, current];
+  }
+
+  next = applyEquipBonus(next, item, 1);
+  next.equipped = {
+    ...next.equipped,
+    [item.slot]: item
+  };
+
+  return { player: next, text: `已裝備 ${item.name}。` };
+};
+
+const generateReward = (player: Player, stage: number): RewardBundle => {
+  const money = Math.round(20 + stage * 7 + Math.random() * 12);
+  const potion = Math.random() < 0.35 ? 1 : 0;
+  const equipment = Math.random() < 0.42 ? createRandomEquipment(stage) : null;
+  const skill = rollSkillDrop(player.classId, player.unlockedSkillIds);
+
+  return {
+    money,
+    potion,
+    equipment,
+    skill
+  };
 };
 
 export const useGameEngine = () => {
   const [state, setState] = useState<GameEngineState>(INITIAL_STATE);
-  const [seed, setSeed] = useState<number>(() => Date.now());
-  const rng = useMemo(() => createSeededRng(seed), [seed]);
 
   useEffect(() => {
     const summary = loadRunSummary();
     setState((prev) => ({ ...prev, lastSummary: summary }));
 
     const loaded = loadGameState();
-    if (!loaded) {
-      return;
-    }
+    if (!loaded) return;
 
     setState((prev) => ({
       ...prev,
@@ -81,14 +133,14 @@ export const useGameEngine = () => {
       turn: loaded.snapshot.turn,
       phase: loaded.snapshot.phase,
       stageLevel: loaded.snapshot.level,
-      upgrades: loaded.offeredUpgrades
+      reward: loaded.snapshot.reward,
+      shopOffers: loaded.snapshot.shopOffers,
+      travelEvent: loaded.snapshot.travelEvent
     }));
   }, []);
 
   useEffect(() => {
-    if (!state.player || !state.boss) {
-      return;
-    }
+    if (!state.player || !state.boss) return;
 
     saveGameState(
       {
@@ -97,196 +149,340 @@ export const useGameEngine = () => {
         logs: state.logs,
         turn: state.turn,
         phase: state.phase,
-        level: state.stageLevel
-      },
-      upgradeOptionsToMetadata(state.upgrades)
+        level: state.stageLevel,
+        reward: state.reward,
+        shopOffers: state.shopOffers,
+        travelEvent: state.travelEvent
+      }
     );
-  }, [state.player, state.boss, state.logs, state.turn, state.phase, state.stageLevel, state.upgrades]);
+  }, [state]);
 
   const startNewRun = useCallback((classId: ClassId) => {
     const player = createPlayerFromClass(classId);
     const boss = createBossForLevel(1);
-    const logs = [
-      createLog('system', `你選擇了「${CLASS_TEMPLATES[classId].name}」，試煉開始。`, 'info', 1),
-      createLog('system', `${boss.emoji} ${boss.name}（${boss.title}）現身了！`, 'warning', 1)
-    ];
 
-    setSeed(Date.now());
     setState((prev) => ({
       ...prev,
       player,
       boss,
-      logs,
+      logs: [
+        createLog('system', `你選擇了「${CLASS_TEMPLATES[classId].name}」，旅程開始。`, 'info', 1),
+        createLog('system', `${boss.emoji} ${boss.name} 出現。`, 'warning', 1)
+      ],
       phase: 'battle',
       stageLevel: 1,
       turn: 1,
-      upgrades: [],
-      actionLock: false
+      reward: null,
+      shopOffers: [],
+      travelEvent: null
     }));
   }, []);
 
   const restartRun = useCallback(() => {
     clearGameState();
-    setSeed(Date.now());
-    setState((prev) => ({
-      ...INITIAL_STATE,
-      lastSummary: prev.lastSummary
-    }));
+    setState((prev) => ({ ...INITIAL_STATE, lastSummary: prev.lastSummary }));
   }, []);
 
-  const runAction = useCallback(
-    (action: BattleActionId) => {
-      setState((prev) => {
-        if (!prev.player || !prev.boss || prev.phase !== 'battle' || prev.actionLock) {
-          return prev;
+  const runAction = useCallback((action: BattleActionId) => {
+    setState((prev) => {
+      if (!prev.player || !prev.boss || prev.phase !== 'battle' || prev.actionLock) return prev;
+
+      if (action === 'heal' && prev.player.potions <= 0) {
+        return {
+          ...prev,
+          logs: appendLogs(prev.logs, [createLog('system', '沒有回復藥水可使用。', 'warning', prev.turn)])
+        };
+      }
+
+      const reason = getActionDisabledReason(action, prev.player);
+      if (reason) {
+        return {
+          ...prev,
+          logs: appendLogs(prev.logs, [createLog('system', reason, 'info', prev.turn)])
+        };
+      }
+
+      const outcome = performTurn(action, prev.player, prev.boss, prev.turn);
+      const withOutcomeLogs = appendLogs(prev.logs, outcome.logs);
+
+      if (outcome.phase === 'reward') {
+        const progressed = applyVictoryRewards(outcome.player, outcome.boss);
+        const bundle = generateReward(progressed, prev.stageLevel);
+        let rewarded = {
+          ...progressed,
+          gold: progressed.gold + bundle.money,
+          potions: progressed.potions + bundle.potion
+        };
+
+        const rewardLogs: BattleLogEntry[] = [
+          createLog('system', `獲得金錢 ${bundle.money}。`, 'reward', outcome.turn)
+        ];
+
+        if (bundle.potion > 0) {
+          rewardLogs.push(createLog('system', `獲得回復藥水 x${bundle.potion}。`, 'heal', outcome.turn));
         }
 
-        const reason = getActionDisabledReason(action, prev.player);
-        if (reason) {
-          const logs = appendLogs(prev.logs, [createLog('system', reason, 'info', prev.turn)]);
-          return {
-            ...prev,
-            logs
+        if (bundle.equipment) {
+          rewarded = {
+            ...rewarded,
+            inventoryEquipment: [...rewarded.inventoryEquipment, bundle.equipment]
           };
+          rewardLogs.push(createLog('system', `掉落裝備：${bundle.equipment.name}`, 'reward', outcome.turn));
         }
 
-        const outcome = performTurn(action, prev.player, prev.boss, prev.turn);
-        const withOutcomeLogs = appendLogs(prev.logs, outcome.logs);
-
-        if (outcome.phase === 'upgrade') {
-          const rewardedPlayer = applyVictoryRewards(outcome.player, outcome.boss);
-          const options = createUpgradeOptions(rewardedPlayer, rng, 3);
-          const logs = appendLogs(withOutcomeLogs, [createLog('system', `勝利！請在進入第 ${prev.stageLevel + 1} 層前選擇一項升級。`, 'reward', outcome.turn)]);
-
-          return {
-            ...prev,
-            player: rewardedPlayer,
-            boss: outcome.boss,
-            logs,
-            phase: 'upgrade',
-            turn: outcome.turn,
-            upgrades: options,
-            actionLock: false
+        if (bundle.skill) {
+          rewarded = {
+            ...rewarded,
+            unlockedSkillIds: [...rewarded.unlockedSkillIds, bundle.skill.id],
+            activeSkillId: bundle.skill.id
           };
+          rewardLogs.push(createLog('system', `學會新技能：${bundle.skill.name}`, 'reward', outcome.turn));
         }
 
-        if (outcome.phase === 'defeat') {
-          const logs = appendLogs(withOutcomeLogs, [createLog('system', '你的旅程在此結束，按下重新開始可再戰。', 'warning', outcome.turn)]);
+        return {
+          ...prev,
+          player: rewarded,
+          boss: outcome.boss,
+          logs: appendLogs(withOutcomeLogs, rewardLogs),
+          phase: 'reward',
+          turn: outcome.turn,
+          reward: bundle,
+          shopOffers: [],
+          travelEvent: null
+        };
+      }
 
-          const summary: RunSummary = {
-            highestLevel: prev.stageLevel,
-            bossesDefeated: outcome.player.defeatedBosses,
-            totalDamageDealt: outcome.player.totalDamageDealt,
-            totalDamageTaken: outcome.player.totalDamageTaken,
-            classId: outcome.player.classId,
-            completedAt: new Date().toISOString()
-          };
-          saveRunSummary(summary);
-
-          return {
-            ...prev,
-            player: outcome.player,
-            boss: outcome.boss,
-            logs,
-            phase: 'defeat',
-            turn: outcome.turn,
-            actionLock: false,
-            lastSummary: summary
-          };
-        }
+      if (outcome.phase === 'defeat') {
+        const summary: RunSummary = {
+          highestLevel: prev.stageLevel,
+          bossesDefeated: outcome.player.defeatedBosses,
+          totalDamageDealt: outcome.player.totalDamageDealt,
+          totalDamageTaken: outcome.player.totalDamageTaken,
+          classId: outcome.player.classId,
+          completedAt: new Date().toISOString()
+        };
+        saveRunSummary(summary);
 
         return {
           ...prev,
           player: outcome.player,
           boss: outcome.boss,
-          logs: withOutcomeLogs,
-          phase: outcome.phase,
+          logs: appendLogs(withOutcomeLogs, [createLog('system', '你倒下了，旅程結束。', 'warning', outcome.turn)]),
+          phase: 'defeat',
           turn: outcome.turn,
-          actionLock: false
+          lastSummary: summary
         };
-      });
-    },
-    [rng]
-  );
-
-  const chooseUpgrade = useCallback((optionId: string) => {
-    setState((prev) => {
-      if (prev.phase !== 'upgrade' || !prev.player) {
-        return prev;
       }
-
-      const selected = prev.upgrades.find((item) => item.id === optionId);
-      if (!selected) {
-        return prev;
-      }
-
-      const nextPlayer = selected.apply(prev.player);
-      const nextLevel = prev.stageLevel + 1;
-      const zh = getUpgradeZh(selected.id, selected.title, selected.description);
-      const logs = appendLogs(prev.logs, [
-        createLog('system', `已獲得升級：「${zh.title}」`, 'reward', prev.turn),
-        createLog('system', '更強的敵人正在逼近…', 'warning', prev.turn)
-      ]);
-
-      const nextBoss = createBossForLevel(nextLevel);
 
       return {
         ...prev,
-        player: resetForNextBoss(nextPlayer),
-        boss: nextBoss,
-        logs: appendLogs(logs, [createLog('system', `第 ${nextLevel} 層開始！${nextBoss.emoji} ${nextBoss.name} 降臨。`, 'warning', 1)]),
-        stageLevel: nextLevel,
+        player: outcome.player,
+        boss: outcome.boss,
+        logs: withOutcomeLogs,
         phase: 'battle',
-        turn: 1,
-        upgrades: []
+        turn: outcome.turn
       };
     });
   }, []);
 
-  const canLoad = state.phase !== 'classSelection' && Boolean(state.player && state.boss);
+  const proceedAfterReward = useCallback(() => {
+    setState((prev) => {
+      if (!prev.player || !prev.boss) return prev;
+
+      if (Math.random() < 0.3) {
+        const shopOffers = createShopOffers(prev.stageLevel + 1);
+        return {
+          ...prev,
+          phase: 'shop',
+          shopOffers,
+          reward: null,
+          logs: appendLogs(prev.logs, [createLog('system', '旅行商人出現了！', 'info', prev.turn)])
+        };
+      }
+
+      const ev = rollTravelEvent();
+      if (ev) {
+        return {
+          ...prev,
+          phase: 'event',
+          travelEvent: ev,
+          reward: null,
+          logs: appendLogs(prev.logs, [createLog('system', `旅途事件：${ev.title}`, 'info', prev.turn)])
+        };
+      }
+
+      const nextLevel = prev.stageLevel + 1;
+      const nextBoss = createBossForLevel(nextLevel);
+      return {
+        ...prev,
+        player: resetForNextBoss(prev.player),
+        boss: nextBoss,
+        stageLevel: nextLevel,
+        phase: 'battle',
+        turn: 1,
+        reward: null,
+        logs: appendLogs(prev.logs, [createLog('system', `第 ${nextLevel} 隻怪物：${nextBoss.emoji} ${nextBoss.name}`, 'warning', 1)])
+      };
+    });
+  }, []);
+
+  const buyFromShop = useCallback((itemId: string) => {
+    setState((prev) => {
+      if (!prev.player || prev.phase !== 'shop') return prev;
+      const target = prev.shopOffers.find((i) => i.id === itemId);
+      if (!target) return prev;
+      if (prev.player.gold < target.price) {
+        return { ...prev, logs: appendLogs(prev.logs, [createLog('system', '金錢不足。', 'warning', prev.turn)]) };
+      }
+
+      return {
+        ...prev,
+        player: {
+          ...prev.player,
+          gold: prev.player.gold - target.price,
+          inventoryEquipment: [...prev.player.inventoryEquipment, target]
+        },
+        shopOffers: prev.shopOffers.filter((i) => i.id !== itemId),
+        logs: appendLogs(prev.logs, [createLog('system', `購買 ${target.name} 成功。`, 'reward', prev.turn)])
+      };
+    });
+  }, []);
+
+  const leaveShop = useCallback(() => {
+    setState((prev) => {
+      if (!prev.player) return prev;
+      const ev = rollTravelEvent();
+      if (ev) {
+        return {
+          ...prev,
+          phase: 'event',
+          travelEvent: ev,
+          shopOffers: []
+        };
+      }
+
+      const nextLevel = prev.stageLevel + 1;
+      const nextBoss = createBossForLevel(nextLevel);
+      return {
+        ...prev,
+        player: resetForNextBoss(prev.player),
+        boss: nextBoss,
+        stageLevel: nextLevel,
+        phase: 'battle',
+        turn: 1,
+        shopOffers: [],
+        logs: appendLogs(prev.logs, [createLog('system', `前方出現：${nextBoss.emoji} ${nextBoss.name}`, 'warning', 1)])
+      };
+    });
+  }, []);
+
+  const resolveEvent = useCallback(() => {
+    setState((prev) => {
+      if (!prev.player || !prev.travelEvent) return prev;
+
+      let player = { ...prev.player };
+      const e = prev.travelEvent;
+      let logText = '';
+
+      if (e.id === 'ev_gold_shrine') {
+        const gain = 45 + prev.stageLevel * 5;
+        player.gold += gain;
+        logText = `你獲得 ${gain} 金錢。`;
+      } else if (e.id === 'ev_skill_scroll') {
+        const skill = rollSkillDrop(player.classId, player.unlockedSkillIds);
+        if (skill) {
+          player.unlockedSkillIds.push(skill.id);
+          player.activeSkillId = skill.id;
+          logText = `你習得了技能 ${skill.name}。`;
+        } else {
+          player.potions += 1;
+          logText = '你得到回復藥水 x1。';
+        }
+      } else if (e.id === 'ev_bless_armor') {
+        player.maxHp += 20;
+        player.hp = Math.min(player.maxHp, player.hp + 20);
+        player.def += 3;
+        logText = '祝福使你最大生命 +20、防禦 +3。';
+      } else if (e.id === 'ev_poison_mist') {
+        player.atk = Math.max(1, player.atk - 3);
+        player.def = Math.max(0, player.def - 2);
+        logText = '毒霧讓你攻擊 -3、防禦 -2。';
+      } else if (e.id === 'ev_bandit_tax') {
+        const loss = Math.min(player.gold, 40 + prev.stageLevel * 3);
+        player.gold -= loss;
+        logText = `你被搶走 ${loss} 金錢。`;
+      } else if (e.id === 'ev_curse_stone') {
+        player.maxHp = Math.max(1, player.maxHp - 18);
+        player.hp = Math.min(player.hp, player.maxHp);
+        player.crit = Math.max(0.05, player.crit - 0.03);
+        logText = '詛咒使你最大生命 -18、爆擊率 -3%。';
+      }
+
+      const nextLevel = prev.stageLevel + 1;
+      const nextBoss = createBossForLevel(nextLevel);
+      return {
+        ...prev,
+        player: resetForNextBoss(player),
+        boss: nextBoss,
+        stageLevel: nextLevel,
+        phase: 'battle',
+        turn: 1,
+        travelEvent: null,
+        logs: appendLogs(prev.logs, [createLog('system', logText, e.polarity === 'positive' ? 'reward' : 'warning', prev.turn)])
+      };
+    });
+  }, []);
+
+  const equipItem = useCallback((itemId: string) => {
+    setState((prev) => {
+      if (!prev.player) return prev;
+      const res = equipFromInventory(prev.player, itemId);
+      return {
+        ...prev,
+        player: res.player,
+        logs: appendLogs(prev.logs, [createLog('system', res.text, 'info', prev.turn)])
+      };
+    });
+  }, []);
+
+  const setActiveSkill = useCallback((skillId: string) => {
+    setState((prev) => {
+      if (!prev.player || !prev.player.unlockedSkillIds.includes(skillId)) return prev;
+      const skill = getSkillById(skillId);
+      return {
+        ...prev,
+        player: { ...prev.player, activeSkillId: skillId },
+        logs: appendLogs(prev.logs, [createLog('system', `目前技能切換為：${skill?.name ?? skillId}`, 'info', prev.turn)])
+      };
+    });
+  }, []);
 
   const hud = useMemo(() => {
     if (!state.player || !state.boss) {
-      return {
-        className: null,
-        bossName: null,
-        stageLabel: '第 1 層'
-      };
+      return { className: null, bossName: null, stageLabel: '第 1 隻怪物' };
     }
 
     return {
       className: CLASS_TEMPLATES[state.player.classId].name,
       bossName: `${state.boss.emoji} ${state.boss.name}・${state.boss.title}`,
-      stageLabel: `第 ${state.stageLevel} 層`
+      stageLabel: `第 ${state.stageLevel} 隻怪物`
     };
   }, [state.player, state.boss, state.stageLevel]);
-
-  const actionAvailability = useMemo(() => {
-    if (!state.player || state.phase !== 'battle') {
-      return {
-        attack: false,
-        guard: false,
-        skill: false,
-        heal: false
-      };
-    }
-
-    return {
-      attack: true,
-      guard: true,
-      skill: state.player.skillCooldown <= 0,
-      heal: state.player.skillCooldown <= 0
-    };
-  }, [state.player, state.phase]);
 
   return {
     state,
     hud,
-    canLoad,
-    actionAvailability,
     startNewRun,
     restartRun,
     runAction,
-    chooseUpgrade
+    proceedAfterReward,
+    buyFromShop,
+    leaveShop,
+    resolveEvent,
+    equipItem,
+    setActiveSkill
   };
 };
+
+
+

@@ -3,15 +3,29 @@ import ActionPanel from './components/ActionPanel';
 import ArenaBackdrop from './components/ArenaBackdrop';
 import BattleLog from './components/BattleLog';
 import ClassSelection from './components/ClassSelection';
+import EventPanel from './components/EventPanel';
+import InventoryPanel from './components/InventoryPanel';
+import RewardPanel from './components/RewardPanel';
 import RunSummaryCard from './components/RunSummaryCard';
+import ShopPanel from './components/ShopPanel';
 import StatusPanel from './components/StatusPanel';
-import TipConsole from './components/TipConsole';
 import TopHud from './components/TopHud';
-import UpgradePanel from './components/UpgradePanel';
 import { useGameEngine } from './hooks/useGameEngine';
 
 const App = () => {
-  const { state, hud, startNewRun, restartRun, runAction, chooseUpgrade } = useGameEngine();
+  const {
+    state,
+    hud,
+    startNewRun,
+    restartRun,
+    runAction,
+    proceedAfterReward,
+    buyFromShop,
+    leaveShop,
+    resolveEvent,
+    equipItem,
+    setActiveSkill
+  } = useGameEngine();
 
   return (
     <div className="relative min-h-screen pb-8">
@@ -43,24 +57,28 @@ const App = () => {
 
                 {state.phase === 'battle' ? <ActionPanel player={state.player} disabled={state.actionLock} onAction={runAction} /> : null}
 
-                {state.phase === 'upgrade' ? <UpgradePanel options={state.upgrades} onPick={chooseUpgrade} /> : null}
+                {state.phase === 'reward' && state.reward ? <RewardPanel reward={state.reward} onContinue={proceedAfterReward} /> : null}
+
+                {state.phase === 'shop' ? (
+                  <ShopPanel gold={state.player.gold} offers={state.shopOffers} onBuy={buyFromShop} onLeave={leaveShop} />
+                ) : null}
+
+                {state.phase === 'event' && state.travelEvent ? <EventPanel eventCard={state.travelEvent} onResolve={resolveEvent} /> : null}
 
                 {state.phase === 'defeat' ? (
                   <div className="panel">
                     <h3 className="panel-title text-red-200">挑戰失敗</h3>
-                    <p className="mt-2 text-sm text-slate-200">你在第 {state.stageLevel} 層被擊敗。可以直接重開，或回主畫面更換職業再戰。</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <button type="button" className="btn-primary" onClick={restartRun}>
-                        返回職業選擇
-                      </button>
-                    </div>
+                    <p className="mt-2 text-sm text-slate-200">你在第 {state.stageLevel} 隻怪物前倒下。重新開始後可以再挑戰。</p>
+                    <button type="button" className="btn-primary mt-4" onClick={restartRun}>
+                      返回職業選擇
+                    </button>
                   </div>
                 ) : null}
               </section>
 
               <section className="space-y-4">
+                <InventoryPanel player={state.player} onEquip={equipItem} onSelectSkill={setActiveSkill} />
                 <BattleLog logs={state.logs} />
-                <TipConsole stageLevel={state.stageLevel} />
                 <RunSummaryCard summary={state.lastSummary} />
               </section>
             </div>
