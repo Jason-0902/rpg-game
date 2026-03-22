@@ -1,8 +1,11 @@
 ﻿export type RoleType = 'Warrior' | 'Mage' | 'Assassin';
 
 export interface CharacterInfo {
-  name: string;
+  id: string;
+  cnName: string;
+  enName: string;
   role: RoleType;
+  roleZh: string;
   image: string;
   hp: number;
   atk: number;

@@ -1,42 +1,61 @@
 ﻿import { useState } from 'react';
+import { ClassId } from '../types/game';
 import CharacterCard from './CharacterCard';
 import { CHARACTER_LIST } from '../data/characterSelectData';
 import { CharacterInfo } from '../types/characterSelect';
 
-const CharacterSelectPage = () => {
+interface CharacterSelectPageProps {
+  onSelectRole: (classId: ClassId) => void;
+}
+
+const roleToClassId: Record<CharacterInfo['role'], ClassId> = {
+  Warrior: 'warrior',
+  Mage: 'mage',
+  Assassin: 'assassin'
+};
+
+const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
   const [selected, setSelected] = useState<CharacterInfo | null>(null);
 
+  const handleSelect = (character: CharacterInfo) => {
+    setSelected(character);
+    onSelectRole(roleToClassId[character.role]);
+  };
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#050812] text-slate-100">
+    <div className="relative min-h-screen overflow-hidden bg-[#03060f] text-slate-100">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-32 top-[-180px] h-[460px] w-[460px] rounded-full bg-cyan-400/15 blur-3xl" />
-        <div className="absolute -right-32 top-[80px] h-[460px] w-[460px] rounded-full bg-fuchsia-500/20 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,#030712_0%,#0a1224_48%,#050812_100%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(56,189,248,0.15),transparent_34%),radial-gradient(circle_at_100%_10%,rgba(244,114,182,0.14),transparent_36%),linear-gradient(180deg,#02050d_0%,#050b17_48%,#02050d_100%)]" />
+        <div className="absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] [background-size:24px_24px]" />
       </div>
 
-      <main className="relative mx-auto max-w-[1500px] px-6 py-12 md:px-10">
-        <header className="mb-10 text-center">
-          <p className="font-display text-sm uppercase tracking-[0.4em] text-cyan-200">Celestial Selection</p>
-          <h1 className="mt-2 font-display text-5xl tracking-[0.14em] text-white md:text-6xl">角色選擇</h1>
-          <p className="mx-auto mt-4 max-w-3xl text-base text-slate-300 md:text-lg">
-            選擇你的命定角色，踏入高難度試煉戰場。
-          </p>
+      <main className="relative mx-auto max-w-[1440px] px-6 py-10 md:px-10">
+        <header className="mb-8 text-center">
+          <div className="mx-auto mb-3 flex max-w-[760px] items-center gap-4">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-amber-400/80" />
+            <span className="text-amber-300">◆</span>
+            <p className="font-display text-2xl tracking-[0.06em] text-white">可操作角色 PLAYABLE CHARACTERS</p>
+            <span className="text-amber-300">◆</span>
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-400/80" />
+          </div>
+          <p className="text-sm tracking-[0.08em] text-slate-300">日系動漫風格 · Anime Style</p>
         </header>
 
-        <section className="grid gap-7 xl:grid-cols-3">
-          {CHARACTER_LIST.map((character) => (
+        <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {CHARACTER_LIST.map((character, index) => (
             <CharacterCard
-              key={character.name}
+              key={character.id}
               character={character}
-              selected={selected?.name === character.name}
-              onSelect={setSelected}
+              selected={selected?.id === character.id}
+              onSelect={handleSelect}
+              index={index}
             />
           ))}
         </section>
 
-        <footer className="mt-10 rounded-3xl border border-white/15 bg-black/35 p-5 text-center backdrop-blur-md">
-          <p className="text-sm tracking-[0.12em] text-slate-200 md:text-base">
-            {selected ? `已選擇：${selected.name}（${selected.role}）` : '尚未選擇角色'}
+        <footer className="mt-7 border-t border-amber-500/35 pt-4 text-center">
+          <p className="font-display text-sm tracking-[0.16em] text-slate-200">
+            {selected ? `已選擇 ${selected.cnName} · ${selected.roleZh}` : '請選擇你的起始角色'}
           </p>
         </footer>
       </main>
