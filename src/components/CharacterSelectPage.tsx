@@ -38,8 +38,7 @@ const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
             <span className="text-amber-300">◆</span>
             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-400/80" />
           </div>
-          <p className="text-sm tracking-[0.08em] text-slate-300">日系動漫風格 · Anime Style</p>
-        </header>
+                  </header>
 
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {CHARACTER_LIST.map((character, index) => (
@@ -64,3 +63,4 @@ const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
 };
 
 export default CharacterSelectPage;
+
