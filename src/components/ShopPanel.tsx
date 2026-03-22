@@ -35,7 +35,7 @@ const ShopPanel = ({ gold, offers, onBuy, onLeave }: ShopPanelProps) => {
               <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
               <div className="flex-1">
                 <p className="font-display text-sm text-slate-100">{item.name}</p>
-                <p className="text-amber-200">{rarityLabel[item.rarity]} | Lv.{item.level}</p>
+                <p className="text-amber-200">{rarityLabel[item.rarity]} </p>
                 <p className="text-slate-300">{bonusText(item)}</p>
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-amber-200">{item.price} 金幣</span>
@@ -56,4 +56,5 @@ const ShopPanel = ({ gold, offers, onBuy, onLeave }: ShopPanelProps) => {
 };
 
 export default ShopPanel;
+
 

@@ -129,12 +129,12 @@ export const createBossForLevel = (level: number): Boss => {
 
   return {
     id: `boss-${level}-${Math.random().toString(36).slice(2, 8)}`,
-    emoji: isBoss ? '??' : template.emoji,
-    name: isBoss ? `${template.name}?領主型` : template.name,
+    emoji: isBoss ? '👹' : template.emoji,
+    name: isBoss ? `${template.name}・領主型` : template.name,
     title: isBoss ? `第 ${chapter} 章首領` : template.title,
     stage: level,
     isBoss,
-    portrait: generateMonsterPortrait(template.name, isBoss ? '??' : template.emoji, level),
+    portrait: generateMonsterPortrait(template.name, isBoss ? '👹' : template.emoji, level),
     hp: maxHp,
     maxHp,
     atk,
@@ -639,4 +639,6 @@ export const getActionDisabledReason = (action: BattleActionId, player: Player):
   }
   return null;
 };
+
+
 

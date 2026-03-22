@@ -66,7 +66,7 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
                   <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
                   <div className="flex-1">
                     <p className="font-display text-sm text-slate-100">{item.name}</p>
-                    <p className="text-amber-200">{rarityLabel[item.rarity]} | Lv.{item.level}</p>
+                    <p className="text-amber-200">{rarityLabel[item.rarity]} </p>
                     <p className="text-slate-300">{bonusText(item)}</p>
                   </div>
                   <button className="btn-muted px-2 py-1 text-[11px]" onClick={() => onEquip(item.id)}>
@@ -106,4 +106,5 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
 };
 
 export default InventoryPanel;
+
 

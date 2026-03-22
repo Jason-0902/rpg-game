@@ -372,7 +372,7 @@ export const useGameEngine = () => {
     setState((prev) => {
       if (!prev.player || !prev.boss) return prev;
 
-      if (Math.random() < 0.33) {
+      if (Math.random() < 0.2) {
         return {
           ...prev,
           phase: 'shop',
@@ -542,7 +542,7 @@ export const useGameEngine = () => {
 
     return {
       className: `${state.player.classTitle} (${CLASS_TEMPLATES[state.player.classId].name})`,
-      bossName: `${state.boss.emoji} ${state.boss.name}?${state.boss.title}`,
+      bossName: `${state.boss.emoji} ${state.boss.name}・${state.boss.title}`,
       stageLabel: state.boss.isBoss ? `第 ${state.stageLevel} 層 Boss` : `第 ${state.stageLevel} 層`
     };
   }, [state.player, state.boss, state.stageLevel]);
@@ -561,4 +561,5 @@ export const useGameEngine = () => {
     setActiveSkill
   };
 };
+
 

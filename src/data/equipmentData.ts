@@ -12,14 +12,6 @@ const slotNames: Record<EquipmentSlot, string> = {
   legs: '腿甲'
 };
 
-const rarityZh: Record<EquipmentRarity, string> = {
-  normal: '一般',
-  fine: '精良',
-  advanced: '高等',
-  legendary: '傳說',
-  mythic: '神話'
-};
-
 const rarityMultiplier: Record<EquipmentRarity, number> = {
   normal: 1,
   fine: 1.28,
@@ -70,12 +62,9 @@ const rollRarity = (stage: number): EquipmentRarity => {
   return 'normal';
 };
 
-const createItemName = (slot: EquipmentSlot, rarity: EquipmentRarity, level: number): string => {
-  if (slot === 'weapon') {
-    return `${rarityZh[rarity]}?${randomFrom(weaponNamePool[rarity])} Lv.${level}`;
-  }
-
-  return `${rarityZh[rarity]}?${slotNames[slot]} Lv.${level}`;
+const createItemName = (slot: EquipmentSlot, rarity: EquipmentRarity): string => {
+  if (slot === 'weapon') return randomFrom(weaponNamePool[rarity]);
+  return slotNames[slot];
 };
 
 export const createRandomEquipment = (stage: number): EquipmentItem => {
@@ -92,7 +81,7 @@ export const createRandomEquipment = (stage: number): EquipmentItem => {
     level,
     rarity,
     image: generateEquipmentImage(slot, level, rarity),
-    name: createItemName(slot, rarity, level),
+    name: createItemName(slot, rarity),
     price: Math.round((45 + stage * 5 + level * 7) * rarityMult),
     bonuses: {}
   };
@@ -115,4 +104,3 @@ export const createRandomEquipment = (stage: number): EquipmentItem => {
 export const createShopOffers = (stage: number): EquipmentItem[] => {
   return [createRandomEquipment(stage), createRandomEquipment(stage + 2), createRandomEquipment(stage + 4)];
 };
-
