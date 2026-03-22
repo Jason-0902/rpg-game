@@ -1,72 +1,65 @@
-﻿import { motion } from 'framer-motion';
-import { SelectableCharacter } from '../types/characterSelect';
+﻿import { CharacterInfo } from '../types/characterSelect';
 
 interface CharacterCardProps {
-  character: SelectableCharacter;
-  index: number;
-  onSelect: (character: SelectableCharacter) => void;
+  character: CharacterInfo;
+  selected: boolean;
+  onSelect: (character: CharacterInfo) => void;
 }
 
-const statLabel = {
-  hp: 'HP',
-  atk: 'ATK',
-  def: 'DEF',
-  crit: 'CRIT'
-} as const;
-
-const CharacterCard = ({ character, index, onSelect }: CharacterCardProps) => {
+const CharacterCard = ({ character, selected, onSelect }: CharacterCardProps) => {
   return (
-    <motion.article
-      initial={{ opacity: 0, y: 50, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: index * 0.12, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      whileHover={{ scale: 1.03, y: -6 }}
-      className={`group relative overflow-hidden rounded-[28px] border border-white/20 bg-slate-950/45 ${character.glow}`}
+    <article
+      className={`group relative overflow-hidden rounded-[28px] border transition-all duration-300 ${
+        selected
+          ? 'border-cyan-300/90 shadow-[0_0_40px_rgba(56,189,248,0.5)]'
+          : 'border-white/20 shadow-[0_10px_35px_rgba(0,0,0,0.4)] hover:border-fuchsia-300/80 hover:shadow-[0_0_40px_rgba(232,121,249,0.45)]'
+      }`}
     >
-      <div className="absolute inset-0">
-        <img src={character.image} alt={character.name} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
-      </div>
-
-      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/52 to-black/10" />
-      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-60" />
-      <div
-        className={`pointer-events-none absolute -inset-px rounded-[28px] bg-gradient-to-br ${character.accent} opacity-0 blur-md transition-opacity duration-500 group-hover:opacity-70`}
+      <img
+        src={character.image}
+        alt={character.name}
+        className="h-[620px] w-full object-cover transition-transform duration-500 group-hover:scale-105"
       />
 
-      <div className="relative flex min-h-[690px] flex-col justify-end p-6">
-        <div className="mb-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/25 bg-black/35 px-3 py-1 text-[11px] tracking-[0.2em] text-slate-200 backdrop-blur">
-          <span>{character.role}</span>
-          <span className="text-slate-400">|</span>
-          <span>{character.element}</span>
-        </div>
+      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/65 to-black/5" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent" />
 
-        <h3 className="font-display text-4xl font-bold tracking-[0.12em] text-white drop-shadow-[0_2px_14px_rgba(0,0,0,0.7)]">{character.name}</h3>
-        <p className="mt-1 text-sm tracking-[0.12em] text-slate-200/90">{character.title}</p>
+      <div className="absolute inset-x-0 bottom-0 p-6">
+        <p className="text-xs uppercase tracking-[0.2em] text-cyan-200">{character.role}</p>
+        <h3 className="mt-1 font-display text-3xl tracking-[0.12em] text-white">{character.name}</h3>
 
-        <p className="mt-4 rounded-2xl border border-white/15 bg-black/35 p-3 text-sm leading-relaxed text-slate-100/95 backdrop-blur-sm">
-          {character.skillSummary}
+        <p className="mt-3 rounded-2xl border border-white/15 bg-black/35 p-3 text-sm leading-relaxed text-slate-100 backdrop-blur-sm">
+          {character.skill}
         </p>
 
-        <div className="mt-4 grid grid-cols-4 gap-2">
-          {(Object.keys(character.stats) as Array<keyof typeof character.stats>).map((key) => (
-            <div key={key} className="rounded-xl border border-white/15 bg-black/40 px-2 py-2 text-center backdrop-blur-sm">
-              <p className="text-[10px] tracking-[0.18em] text-slate-300">{statLabel[key]}</p>
-              <p className="mt-1 font-display text-xl text-white">{character.stats[key]}{key === 'crit' ? '%' : ''}</p>
-            </div>
-          ))}
+        <div className="mt-4 grid grid-cols-4 gap-2 text-center">
+          <div className="rounded-xl border border-white/15 bg-black/35 p-2">
+            <p className="text-[10px] tracking-[0.14em] text-slate-300">HP</p>
+            <p className="font-display text-xl text-white">{character.hp}</p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-black/35 p-2">
+            <p className="text-[10px] tracking-[0.14em] text-slate-300">ATK</p>
+            <p className="font-display text-xl text-white">{character.atk}</p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-black/35 p-2">
+            <p className="text-[10px] tracking-[0.14em] text-slate-300">DEF</p>
+            <p className="font-display text-xl text-white">{character.def}</p>
+          </div>
+          <div className="rounded-xl border border-white/15 bg-black/35 p-2">
+            <p className="text-[10px] tracking-[0.14em] text-slate-300">CRIT</p>
+            <p className="font-display text-xl text-white">{character.crit}%</p>
+          </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => onSelect(character)}
-          className="mt-5 w-full rounded-2xl border border-sky-200/45 bg-gradient-to-r from-cyan-400/30 to-indigo-500/30 px-5 py-3 font-display text-sm uppercase tracking-[0.2em] text-cyan-50 backdrop-blur transition-all duration-300 hover:border-cyan-100/90 hover:from-cyan-300/45 hover:to-indigo-400/45"
+        <button
           type="button"
+          onClick={() => onSelect(character)}
+          className="mt-4 w-full rounded-2xl border border-cyan-200/50 bg-gradient-to-r from-cyan-400/30 to-indigo-500/30 px-4 py-3 font-display text-sm uppercase tracking-[0.2em] text-cyan-50 transition-all duration-300 hover:border-cyan-100 hover:from-cyan-300/45 hover:to-indigo-400/45"
         >
           選擇角色
-        </motion.button>
+        </button>
       </div>
-    </motion.article>
+    </article>
   );
 };
 
