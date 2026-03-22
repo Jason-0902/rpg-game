@@ -27,6 +27,29 @@ body {
   min-height: 100vh;
 }
 
+.theme-demon {
+  background:
+    radial-gradient(circle at 12% 12%, rgba(239, 68, 68, 0.14), transparent 42%),
+    radial-gradient(circle at 88% 18%, rgba(127, 29, 29, 0.18), transparent 46%),
+    linear-gradient(180deg, #140608 0%, #21080d 48%, #0f0408 100%);
+}
+
+.theme-demon .panel {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: linear-gradient(145deg, rgba(38, 9, 13, 0.86), rgba(24, 6, 10, 0.92));
+}
+
+.theme-demon .btn-primary {
+  border-color: rgba(248, 113, 113, 0.65);
+  background: rgba(153, 27, 27, 0.35);
+  color: #fee2e2;
+}
+
+.theme-demon .btn-primary:hover {
+  border-color: rgba(254, 202, 202, 0.85);
+  background: rgba(185, 28, 28, 0.48);
+}
+
 @layer components {
   .panel {
     @apply rounded-2xl border border-panelEdge/80 bg-panel/80 p-4 shadow-panel backdrop-blur-sm;

@@ -149,7 +149,7 @@ const applyRandomKillGrowth = (player: Player) => {
 };
 
 const evolveClassIfNeeded = (player: Player) => {
-  const targetRank = Math.floor(player.level / 100);
+  const targetRank = Math.floor(player.level / 50);
   if (targetRank <= player.classRank) {
     return { player, logs: [] as string[] };
   }
@@ -172,6 +172,13 @@ const evolveClassIfNeeded = (player: Player) => {
   return { player: next, logs };
 };
 
+const getStageModeLabel = (stage: number) => {
+  if (stage > 1000) return '天界';
+  if (stage > 500) return '深淵';
+  if (stage <= 50) return '新手村';
+  return '地表';
+};
+
 const generateReward = (player: Player, stage: number, statGrowths: string[]): RewardBundle => {
   const money = Math.round(22 + stage * 7 + Math.random() * 18);
   const p = rollPotionDrop(stage);
@@ -186,6 +193,22 @@ const generateReward = (player: Player, stage: number, statGrowths: string[]): R
     equipment,
     skill
   };
+};
+
+const applyTemporaryDebuff = (player: Player, name: string, atkPenalty: number, defPenalty: number, critPenalty: number, turns: number): Player => ({
+  ...player,
+  temporaryDebuff: {
+    name,
+    atkPenalty,
+    defPenalty,
+    critPenalty,
+    remainingTurns: turns
+  }
+});
+
+const addUniqueSkill = (player: Player, skillId: string): Player => {
+  if (player.unlockedSkillIds.includes(skillId)) return player;
+  return { ...player, unlockedSkillIds: [...player.unlockedSkillIds, skillId], activeSkillId: skillId };
 };
 
 export const useGameEngine = () => {
@@ -230,7 +253,7 @@ export const useGameEngine = () => {
 
   const startNewRun = useCallback((classId: ClassId) => {
     const player = createPlayerFromClass(classId);
-    const boss = createBossForLevel(1);
+    const boss = createBossForLevel(1, player.alignment);
 
     setState((prev) => ({
       ...prev,
@@ -372,7 +395,7 @@ export const useGameEngine = () => {
     setState((prev) => {
       if (!prev.player || !prev.boss) return prev;
 
-      if (Math.random() < 0.2) {
+      if (Math.random() < 0.09) {
         return {
           ...prev,
           phase: 'shop',
@@ -382,7 +405,7 @@ export const useGameEngine = () => {
         };
       }
 
-      const ev = rollTravelEvent();
+      const ev = rollTravelEvent(prev.stageLevel, prev.player.alignment);
       if (ev) {
         return {
           ...prev,
@@ -394,8 +417,11 @@ export const useGameEngine = () => {
       }
 
       const nextLevel = prev.stageLevel + 1;
-      const nextBoss = createBossForLevel(nextLevel);
-      const warning = nextBoss.isBoss ? `第 ${nextLevel} 層 Boss 出現：${nextBoss.emoji} ${nextBoss.name}` : `第 ${nextLevel} 隻怪物：${nextBoss.emoji} ${nextBoss.name}`;
+      const nextBoss = createBossForLevel(nextLevel, prev.player.alignment);
+      const mode = getStageModeLabel(nextLevel);
+      const warning = nextBoss.isBoss
+        ? `【${mode}】第 ${nextLevel} 層 Boss 出現：${nextBoss.emoji} ${nextBoss.name}`
+        : `【${mode}】第 ${nextLevel} 隻怪物：${nextBoss.emoji} ${nextBoss.name}`;
       return {
         ...prev,
         player: resetForNextBoss(prev.player),
@@ -434,13 +460,13 @@ export const useGameEngine = () => {
   const leaveShop = useCallback(() => {
     setState((prev) => {
       if (!prev.player) return prev;
-      const ev = rollTravelEvent();
+      const ev = rollTravelEvent(prev.stageLevel, prev.player.alignment);
       if (ev) {
         return { ...prev, phase: 'event', travelEvent: ev, shopOffers: [] };
       }
 
       const nextLevel = prev.stageLevel + 1;
-      const nextBoss = createBossForLevel(nextLevel);
+      const nextBoss = createBossForLevel(nextLevel, prev.player.alignment);
       return {
         ...prev,
         player: resetForNextBoss(prev.player),
@@ -449,7 +475,7 @@ export const useGameEngine = () => {
         phase: 'battle',
         turn: 1,
         shopOffers: [],
-        logs: appendLogs(prev.logs, [createLog('system', `前方出現：${nextBoss.emoji} ${nextBoss.name}`, 'warning', 1)])
+        logs: appendLogs(prev.logs, [createLog('system', `【${getStageModeLabel(nextLevel)}】前方出現：${nextBoss.emoji} ${nextBoss.name}`, 'warning', 1)])
       };
     });
   }, []);
@@ -461,6 +487,7 @@ export const useGameEngine = () => {
       let player = { ...prev.player };
       const e = prev.travelEvent;
       let logText = '';
+      const eventLogs: BattleLogEntry[] = [];
 
       if (e.id === 'ev_gold_shrine') {
         const gain = 45 + prev.stageLevel * 5;
@@ -480,24 +507,98 @@ export const useGameEngine = () => {
         player.maxHp += 20;
         player.hp = Math.min(player.maxHp, player.hp + 20);
         player.def += 3;
-        logText = '祝福使你最大生命 +20、防禦 +3。';
+        logText = '祝福使你最大生命 +20、防禦 +3（永久）。';
+      } else if (e.id === 'ev_lucky_cache') {
+        const luckyGold = 80 + prev.stageLevel * 8;
+        player.gold += luckyGold;
+        player.potions.major += 1;
+        if (Math.random() < 0.45) {
+          player.inventoryEquipment.push(createRandomEquipment(prev.stageLevel + 30));
+        }
+        logText = `你獲得補給：金錢 +${luckyGold}、高級藥水 x1。`;
       } else if (e.id === 'ev_poison_mist') {
-        player.atk = Math.max(1, player.atk - 3);
-        player.def = Math.max(0, player.def - 2);
-        logText = '毒霧讓你攻擊 -3、防禦 -2。';
+        player = applyTemporaryDebuff(player, '毒霧侵蝕', 8, 10, 0.08, 4);
+        logText = '毒霧造成暫時弱化（4 回合）：攻擊、防禦與爆擊下降。';
       } else if (e.id === 'ev_bandit_tax') {
         const loss = Math.min(player.gold, 40 + prev.stageLevel * 3);
         player.gold -= loss;
         logText = `你被搶走 ${loss} 金錢。`;
       } else if (e.id === 'ev_curse_stone') {
-        player.maxHp = Math.max(1, player.maxHp - 18);
-        player.hp = Math.min(player.hp, player.maxHp);
-        player.crit = Math.max(0.05, player.crit - 0.03);
-        logText = '詛咒使你最大生命 -18、爆擊率 -3%。';
+        player = applyTemporaryDebuff(player, '詛咒枷鎖', 10, 8, 0.12, 5);
+        logText = '詛咒纏身（5 回合）：攻擊、防禦與爆擊率暫時下降。';
+      } else if (e.id === 'ev_abyss_relic') {
+        player.inventoryEquipment.push(createRandomEquipment(prev.stageLevel + 120));
+        player.gold += 120 + prev.stageLevel * 10;
+        logText = '你獲得深淵遺珍裝備與大量金錢。';
+      } else if (e.id === 'ev_abyss_whisper') {
+        player = applyTemporaryDebuff(player, '深淵低語', 14, 12, 0.1, 6);
+        logText = '深淵低語干擾心智（6 回合）：戰鬥能力下降。';
+      } else if (e.id === 'ev_heaven_oracle') {
+        player.maxHp += 80;
+        player.hp = Math.min(player.maxHp, player.hp + 80);
+        player.atk += 22;
+        player.def += 18;
+        player.crit += 0.12;
+        player.potions.supreme += 1;
+        logText = '天界神諭降臨：能力大幅永久提升，並獲得頂級藥水。';
+      } else if (e.id === 'ev_astral_trial') {
+        player.gold += 220 + prev.stageLevel * 12;
+        player.inventoryEquipment.push(createRandomEquipment(prev.stageLevel + 180));
+        player.inventoryEquipment.push(createRandomEquipment(prev.stageLevel + 140));
+        logText = '你通過星律試煉，獲得雙裝備獎勵與鉅額金錢。';
+      } else if (e.id === 'ev_divine_luminara') {
+        player.maxHp += 120;
+        player.hp = Math.min(player.maxHp, player.hp + 120);
+        player.atk += 30;
+        player.def += 24;
+        player.crit += 0.2;
+        player = addUniqueSkill(player, `${player.classId}_divine_luminara`);
+        logText = '曜星女神「露米娜菈」加護：全屬性大幅永久提升。';
+      } else if (e.id === 'ev_divine_elysion') {
+        player.maxHp += 140;
+        player.hp = Math.min(player.maxHp, player.hp + 140);
+        player.atk += 28;
+        player.def += 20;
+        player.crit += 0.18;
+        player = addUniqueSkill(player, `${player.classId}_astral_elysion`);
+        logText = '銀弦天琴座「艾莉希昂」賜福：獲得星域之力。';
+      } else if (e.id.startsWith('ev_demon_contract_')) {
+        const contractAccepted = Math.random() < 0.58;
+        if (contractAccepted) {
+          player.alignment = 'demon';
+          player.maxHp += 160;
+          player.hp = Math.min(player.maxHp, player.hp + 160);
+          player.atk += 38;
+          player.def += 22;
+          player.crit += 0.24;
+          player = addUniqueSkill(player, `${player.classId}_demon_pact`);
+          logText = `你與惡魔簽約成功，獲得禁忌之力。從此人類將視你為敵。`;
+        } else {
+          player.maxHp += 40;
+          player.hp = Math.min(player.maxHp, player.hp + 40);
+          player.atk += 8;
+          player.def += 6;
+          logText = '你拒絕簽約並全身而退，仍帶回少量惡魔之力。';
+        }
       }
 
       const nextLevel = prev.stageLevel + 1;
-      const nextBoss = createBossForLevel(nextLevel);
+      const nextBoss = createBossForLevel(nextLevel, player.alignment);
+      eventLogs.push(createLog('system', logText, e.polarity === 'positive' ? 'reward' : 'warning', prev.turn));
+      if (player.temporaryDebuff) {
+        eventLogs.push(
+          createLog(
+            'system',
+            `負面效果：${player.temporaryDebuff.name}（剩餘 ${player.temporaryDebuff.remainingTurns} 回合）`,
+            'debuff',
+            prev.turn
+          )
+        );
+      }
+      if (player.alignment === 'demon' && prev.player.alignment !== 'demon') {
+        eventLogs.push(createLog('system', '你已墮入魔契陣營，後續敵人將轉為人類討伐隊。', 'warning', prev.turn));
+      }
+
       return {
         ...prev,
         player: resetForNextBoss(player),
@@ -506,7 +607,7 @@ export const useGameEngine = () => {
         phase: 'battle',
         turn: 1,
         travelEvent: null,
-        logs: appendLogs(prev.logs, [createLog('system', logText, e.polarity === 'positive' ? 'reward' : 'warning', prev.turn)])
+        logs: appendLogs(prev.logs, eventLogs)
       };
     });
   }, []);

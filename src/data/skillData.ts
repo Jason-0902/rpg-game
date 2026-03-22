@@ -29,7 +29,7 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'warrior_colossus_wall',
       classId: 'warrior',
       name: '巨像城牆',
-      description: '100 級進階技能。強化護盾並獲得反擊增傷。',
+      description: '50 級進階技能。強化護盾並獲得反擊增傷。',
       source: 'evolution',
       evolutionRank: 1
     },
@@ -37,7 +37,7 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'warrior_aegis_requiem',
       classId: 'warrior',
       name: '聖盾鎮魂歌',
-      description: '200 級進階技能。大幅提升防禦並重擊敵人。',
+      description: '100 級進階技能。大幅提升防禦並重擊敵人。',
       source: 'evolution',
       evolutionRank: 2
     },
@@ -45,7 +45,7 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'warrior_titan_overlord',
       classId: 'warrior',
       name: '泰坦霸皇',
-      description: '300 級進階技能。超高護盾與高倍率終結攻擊。',
+      description: '150 級進階技能。超高護盾與高倍率終結攻擊。',
       source: 'evolution',
       evolutionRank: 3
     }
@@ -55,7 +55,7 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'mage_stellar_tide',
       classId: 'mage',
       name: '星潮崩落',
-      description: '100 級進階技能。高倍率奧術潮汐並削弱護甲。',
+      description: '50 級進階技能。高倍率奧術潮汐並削弱護甲。',
       source: 'evolution',
       evolutionRank: 1
     },
@@ -63,7 +63,7 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'mage_abyss_meteor',
       classId: 'mage',
       name: '深淵隕星',
-      description: '200 級進階技能。造成巨量魔法傷害。',
+      description: '100 級進階技能。造成巨量魔法傷害。',
       source: 'evolution',
       evolutionRank: 2
     },
@@ -71,7 +71,7 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'mage_cosmic_judgement',
       classId: 'mage',
       name: '寰宇審判',
-      description: '300 級進階技能。超高爆發並短暫壓制敵方攻擊。',
+      description: '150 級進階技能。超高爆發並短暫壓制敵方攻擊。',
       source: 'evolution',
       evolutionRank: 3
     }
@@ -81,7 +81,7 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'assassin_lunar_ripper',
       classId: 'assassin',
       name: '月蝕裂界',
-      description: '100 級進階技能。追加多段攻擊與更高爆擊倍率。',
+      description: '50 級進階技能。追加多段攻擊與更高爆擊倍率。',
       source: 'evolution',
       evolutionRank: 1
     },
@@ -89,7 +89,7 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'assassin_void_execution',
       classId: 'assassin',
       name: '虛無處決',
-      description: '200 級進階技能。高爆擊斬擊，終結殘血目標。',
+      description: '100 級進階技能。高爆擊斬擊，終結殘血目標。',
       source: 'evolution',
       evolutionRank: 2
     },
@@ -97,12 +97,24 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       id: 'assassin_eternal_night',
       classId: 'assassin',
       name: '永夜終幕',
-      description: '300 級進階技能。多段高倍率連斬，爆擊收益極高。',
+      description: '150 級進階技能。多段高倍率連斬，爆擊收益極高。',
       source: 'evolution',
       evolutionRank: 3
     }
   ]
 };
+
+const SPECIAL_EVENT_SKILLS: SkillDefinition[] = [
+  { id: 'warrior_divine_luminara', classId: 'warrior', name: '曜星裁決', description: '女神祝福技：重擊並恢復護盾。', source: 'drop' },
+  { id: 'warrior_astral_elysion', classId: 'warrior', name: '銀弦天罰', description: '星座祝福技：高爆發終結打擊。', source: 'drop' },
+  { id: 'warrior_demon_pact', classId: 'warrior', name: '魔契血鎧', description: '惡魔契約技：護盾與傷害雙增幅。', source: 'drop' },
+  { id: 'mage_divine_luminara', classId: 'mage', name: '曜星天渦', description: '女神祝福技：高倍率星光魔炮。', source: 'drop' },
+  { id: 'mage_astral_elysion', classId: 'mage', name: '銀弦星河', description: '星座祝福技：多段天穹魔法。', source: 'drop' },
+  { id: 'mage_demon_pact', classId: 'mage', name: '魔契深紅', description: '惡魔契約技：深紅魔炎爆發。', source: 'drop' },
+  { id: 'assassin_divine_luminara', classId: 'assassin', name: '曜星幻斬', description: '女神祝福技：高速多段斬擊。', source: 'drop' },
+  { id: 'assassin_astral_elysion', classId: 'assassin', name: '銀弦斷界', description: '星座祝福技：瞬連刺與處決。', source: 'drop' },
+  { id: 'assassin_demon_pact', classId: 'assassin', name: '魔契夜葬', description: '惡魔契約技：禁忌連斬與高爆擊。', source: 'drop' }
+];
 
 const EVOLUTION_TITLES: Record<ClassId, EvolutionTrack[]> = {
   warrior: [
@@ -128,7 +140,7 @@ const EVOLUTION_TITLES: Record<ClassId, EvolutionTrack[]> = {
   ]
 };
 
-const ALL_SKILLS = [...Object.values(BASE_SKILLS).flat(), ...Object.values(EVOLUTION_SKILLS).flat()];
+const ALL_SKILLS = [...Object.values(BASE_SKILLS).flat(), ...Object.values(EVOLUTION_SKILLS).flat(), ...SPECIAL_EVENT_SKILLS];
 
 export const getBaseSkillId = (classId: ClassId): string => BASE_SKILLS[classId][0].id;
 

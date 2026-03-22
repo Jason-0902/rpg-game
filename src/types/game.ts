@@ -1,5 +1,7 @@
 ﻿export type ClassId = 'warrior' | 'mage' | 'assassin';
 
+export type Alignment = 'human' | 'demon';
+
 export type BattlePhase =
   | 'classSelection'
   | 'battle'
@@ -69,6 +71,7 @@ export interface EventCard {
   title: string;
   description: string;
   polarity: 'positive' | 'negative';
+  rarity?: 'normal' | 'rare' | 'mythic';
 }
 
 export interface RewardBundle {
@@ -78,6 +81,14 @@ export interface RewardBundle {
   statGrowths: string[];
   equipment?: EquipmentItem | null;
   skill?: SkillDefinition | null;
+}
+
+export interface TemporaryDebuff {
+  name: string;
+  atkPenalty: number;
+  defPenalty: number;
+  critPenalty: number;
+  remainingTurns: number;
 }
 
 export interface Player extends StatBlock, RuntimeCombatState {
@@ -95,6 +106,8 @@ export interface Player extends StatBlock, RuntimeCombatState {
   activeSkillId: string;
   equipped: Record<EquipmentSlot, EquipmentItem | null>;
   inventoryEquipment: EquipmentItem[];
+  alignment: Alignment;
+  temporaryDebuff: TemporaryDebuff | null;
 }
 
 export interface Boss extends StatBlock, RuntimeCombatState {
@@ -109,6 +122,7 @@ export interface Boss extends StatBlock, RuntimeCombatState {
   enrageBonus: number;
   enraged: boolean;
   dropGold: number;
+  faction: 'monster' | 'human';
 }
 
 export interface BattleLogEntry {
@@ -254,7 +268,6 @@ export interface RunSummary {
 }
 
 export const STORAGE_KEYS = {
-  gameState: 'rpg_boss_battle_state_v4',
-  runSummary: 'rpg_boss_battle_last_run_v4'
+  gameState: 'rpg_boss_battle_state_v5',
+  runSummary: 'rpg_boss_battle_last_run_v5'
 } as const;
-

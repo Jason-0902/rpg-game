@@ -1,0 +1,60 @@
+﻿<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'>
+  <defs>
+    <linearGradient id='bg' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#4f46e5'/>
+      <stop offset='100%' stop-color='#0f172a'/>
+    </linearGradient>
+    <radialGradient id='light' cx='0.35' cy='0.18' r='0.8'>
+      <stop offset='0%' stop-color='#ffffff' stop-opacity='0.3'/>
+      <stop offset='100%' stop-color='#ffffff' stop-opacity='0'/>
+    </radialGradient>
+    <linearGradient id='skin' x1='0' y1='0' x2='0' y2='1'>
+      <stop offset='0%' stop-color='#ffe9df'/>
+      <stop offset='100%' stop-color='#f5cdb8'/>
+    </linearGradient>
+    <linearGradient id='hair' x1='0' y1='0' x2='1' y2='1'>
+      <stop offset='0%' stop-color='#ff78b6'/>
+      <stop offset='100%' stop-color='#8b5cf6'/>
+    </linearGradient>
+    <linearGradient id='iris' x1='0' y1='0' x2='0' y2='1'>
+      <stop offset='0%' stop-color='#9fe7ff'/>
+      <stop offset='100%' stop-color='#4474f0'/>
+    </linearGradient>
+  </defs>
+
+  <rect width='1024' height='1024' fill='url(#bg)'/>
+  <rect width='1024' height='1024' fill='url(#light)'/>
+  <circle cx='860' cy='140' r='120' fill='#ffffff' opacity='0.08'/>
+
+  <g transform='translate(0,20)'>
+    <path d='M250 880 Q512 980 774 880 L828 1060 L196 1060 Z' fill='#1e293b' opacity='0.95'/>
+    <path d='M320 842 Q512 930 704 842' stroke='#7dd3fc' stroke-width='14' fill='none' opacity='0.7'/>
+
+    <path d='M270 450 Q288 210 512 186 Q736 210 754 450 Q700 310 606 264 Q512 236 418 264 Q324 310 270 450 Z' fill='url(#hair)'/>
+    <path d='M322 492 Q376 336 512 330 Q648 336 702 492 Q650 438 588 406 Q512 380 436 406 Q374 438 322 492 Z' fill='url(#hair)' opacity='0.82'/>
+
+    <path d='M512 244 Q632 246 670 370 Q690 440 670 548 Q640 700 512 744 Q384 700 354 548 Q334 440 354 370 Q392 246 512 244 Z' fill='url(#skin)'/>
+
+    <path d='M372 490 Q430 446 486 492' stroke='#111827' stroke-width='9' fill='none' stroke-linecap='round'/>
+    <path d='M538 492 Q594 446 652 490' stroke='#111827' stroke-width='9' fill='none' stroke-linecap='round'/>
+
+    <ellipse cx='430' cy='510' rx='44' ry='30' fill='#fff'/>
+    <ellipse cx='594' cy='510' rx='44' ry='30' fill='#fff'/>
+    <ellipse cx='430' cy='516' rx='24' ry='24' fill='url(#iris)'/>
+    <ellipse cx='594' cy='516' rx='24' ry='24' fill='url(#iris)'/>
+    <ellipse cx='430' cy='522' rx='12' ry='13' fill='#0f172a'/>
+    <ellipse cx='594' cy='522' rx='12' ry='13' fill='#0f172a'/>
+    <circle cx='421' cy='503' r='6' fill='#fff'/>
+    <circle cx='585' cy='503' r='6' fill='#fff'/>
+
+    <path d='M504 572 Q512 588 520 572' stroke='#c08484' stroke-width='4' fill='none' stroke-linecap='round'/>
+    <path d='M442 632 Q512 680 582 632' stroke='#ec4899' stroke-width='12' fill='none' stroke-linecap='round'/>
+    <ellipse cx='372' cy='592' rx='22' ry='14' fill='#fb7185' opacity='0.35'/>
+    <ellipse cx='652' cy='592' rx='22' ry='14' fill='#fb7185' opacity='0.35'/>
+
+    <path d='M318 450 Q366 424 426 448' stroke='#2d1b3d' stroke-width='7' fill='none' stroke-linecap='round'/>
+    <path d='M598 448 Q658 424 706 450' stroke='#2d1b3d' stroke-width='7' fill='none' stroke-linecap='round'/>
+  </g>
+
+  <text x='512' y='960' text-anchor='middle' font-size='56' fill='#ffffff' font-family='Segoe UI, Noto Sans TC, sans-serif'>二次元女角色示範</text>
+</svg>

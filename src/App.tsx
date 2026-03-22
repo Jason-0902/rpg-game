@@ -28,7 +28,7 @@ const App = () => {
   } = useGameEngine();
 
   return (
-    <div className="relative min-h-screen pb-8">
+    <div className={`relative min-h-screen pb-8 ${state.player?.alignment === 'demon' ? 'theme-demon' : ''}`}>
       {state.phase !== 'classSelection' ? <ArenaBackdrop /> : null}
 
       <AnimatePresence mode="wait">

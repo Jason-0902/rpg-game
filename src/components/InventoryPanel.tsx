@@ -1,4 +1,5 @@
 ﻿import { getSkillById } from '../data/skillData';
+import { getSkillDamagePreview } from '../logic/battle';
 import { EquipmentItem, EquipmentRarity, Player } from '../types/game';
 import Panel from './Panel';
 
@@ -95,6 +96,7 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
                 >
                   <p className="font-display text-sm">{skill?.name ?? id}</p>
                   <p>{skill?.description ?? '技能說明遺失'}</p>
+                  <p className="mt-1 text-cyan-200/90">{getSkillDamagePreview(player, id)}</p>
                 </button>
               );
             })}
@@ -106,5 +108,4 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
 };
 
 export default InventoryPanel;
-
 

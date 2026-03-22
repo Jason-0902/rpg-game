@@ -1,9 +1,9 @@
-﻿import { BOSS_TEMPLATES } from '../data/bossData';
-import { CLASS_TEMPLATES } from '../data/classData';
+﻿import { CLASS_TEMPLATES } from '../data/classData';
 import { getBaseSkillId, getClassTitleByRank } from '../data/skillData';
 import { generateMonsterPortrait } from './imageGen';
 import {
   ActionOutcome,
+  Alignment,
   BattleActionId,
   BattleLogEntry,
   Boss,
@@ -25,6 +25,307 @@ const COMBAT_NUMBERS: CombatNumbers = {
   minimumDamage: 1
 };
 
+interface EnemyTemplate {
+  emoji: string;
+  name: string;
+  title: string;
+  baseHp: number;
+  baseAtk: number;
+  baseDef: number;
+  baseCrit: number;
+  hpScale: number;
+  atkScale: number;
+  defScale: number;
+  critScale: number;
+  enrageThreshold: number;
+  enrageBonus: number;
+}
+
+const NEWBIE_MONSTERS: EnemyTemplate[] = [
+  {
+    emoji: '??',
+    name: '綠史萊姆',
+    title: '新手村黏液怪',
+    baseHp: 26,
+    baseAtk: 9,
+    baseDef: 3,
+    baseCrit: 0.06,
+    hpScale: 0.4,
+    atkScale: 0.3,
+    defScale: 0.1,
+    critScale: 0.0004,
+    enrageThreshold: 0.28,
+    enrageBonus: 0.08
+  },
+  {
+    emoji: '???',
+    name: '洞窟哥布林',
+    title: '新手村掠奪者',
+    baseHp: 34,
+    baseAtk: 11,
+    baseDef: 4,
+    baseCrit: 0.08,
+    hpScale: 0.45,
+    atkScale: 0.34,
+    defScale: 0.13,
+    critScale: 0.0005,
+    enrageThreshold: 0.34,
+    enrageBonus: 0.1
+  },
+  {
+    emoji: '??',
+    name: '荒野幼狼',
+    title: '新手村野獸',
+    baseHp: 30,
+    baseAtk: 12,
+    baseDef: 3,
+    baseCrit: 0.09,
+    hpScale: 0.42,
+    atkScale: 0.35,
+    defScale: 0.1,
+    critScale: 0.0005,
+    enrageThreshold: 0.36,
+    enrageBonus: 0.12
+  },
+  {
+    emoji: '??',
+    name: '暗穴蝙蝠',
+    title: '新手村低階魔物',
+    baseHp: 24,
+    baseAtk: 13,
+    baseDef: 2,
+    baseCrit: 0.1,
+    hpScale: 0.35,
+    atkScale: 0.36,
+    defScale: 0.09,
+    critScale: 0.0006,
+    enrageThreshold: 0.3,
+    enrageBonus: 0.1
+  }
+];
+
+const MID_MONSTERS: EnemyTemplate[] = [
+  {
+    emoji: '??',
+    name: '熔爪惡狼',
+    title: '火山獵殺者',
+    baseHp: 120,
+    baseAtk: 22,
+    baseDef: 8,
+    baseCrit: 0.11,
+    hpScale: 15,
+    atkScale: 3.4,
+    defScale: 1.2,
+    critScale: 0.0032,
+    enrageThreshold: 0.42,
+    enrageBonus: 0.2
+  },
+  {
+    emoji: '??',
+    name: '墓地怨骸',
+    title: '亡靈監工',
+    baseHp: 136,
+    baseAtk: 20,
+    baseDef: 9,
+    baseCrit: 0.1,
+    hpScale: 16,
+    atkScale: 3.1,
+    defScale: 1.5,
+    critScale: 0.003,
+    enrageThreshold: 0.37,
+    enrageBonus: 0.22
+  },
+  {
+    emoji: '?',
+    name: '雷鳴守衛',
+    title: '失控機械',
+    baseHp: 144,
+    baseAtk: 21,
+    baseDef: 10,
+    baseCrit: 0.1,
+    hpScale: 17,
+    atkScale: 3.2,
+    defScale: 1.5,
+    critScale: 0.0028,
+    enrageThreshold: 0.4,
+    enrageBonus: 0.2
+  },
+  {
+    emoji: '??',
+    name: '夜蝕祭司',
+    title: '黑月信徒',
+    baseHp: 130,
+    baseAtk: 23,
+    baseDef: 7,
+    baseCrit: 0.13,
+    hpScale: 15,
+    atkScale: 3.5,
+    defScale: 1.15,
+    critScale: 0.0034,
+    enrageThreshold: 0.45,
+    enrageBonus: 0.24
+  }
+];
+
+const ABYSS_MONSTERS: EnemyTemplate[] = [
+  {
+    emoji: '???',
+    name: '深淵噬魂者',
+    title: '裂界吞噬種',
+    baseHp: 280,
+    baseAtk: 56,
+    baseDef: 24,
+    baseCrit: 0.2,
+    hpScale: 32,
+    atkScale: 6,
+    defScale: 2.8,
+    critScale: 0.006,
+    enrageThreshold: 0.5,
+    enrageBonus: 0.34
+  },
+  {
+    emoji: '???',
+    name: '虛空監視者',
+    title: '深淵眼眸',
+    baseHp: 300,
+    baseAtk: 53,
+    baseDef: 28,
+    baseCrit: 0.18,
+    hpScale: 34,
+    atkScale: 5.8,
+    defScale: 3,
+    critScale: 0.0056,
+    enrageThreshold: 0.46,
+    enrageBonus: 0.32
+  },
+  {
+    emoji: '??',
+    name: '猩紅判官',
+    title: '深淵執刑者',
+    baseHp: 268,
+    baseAtk: 61,
+    baseDef: 23,
+    baseCrit: 0.22,
+    hpScale: 31,
+    atkScale: 6.2,
+    defScale: 2.6,
+    critScale: 0.0064,
+    enrageThreshold: 0.48,
+    enrageBonus: 0.36
+  }
+];
+
+const HEAVEN_MONSTERS: EnemyTemplate[] = [
+  {
+    emoji: '??',
+    name: '天穹審判者',
+    title: '天界刑律官',
+    baseHp: 420,
+    baseAtk: 78,
+    baseDef: 34,
+    baseCrit: 0.25,
+    hpScale: 42,
+    atkScale: 7.4,
+    defScale: 3.5,
+    critScale: 0.0068,
+    enrageThreshold: 0.5,
+    enrageBonus: 0.38
+  },
+  {
+    emoji: '??',
+    name: '聖曜羽騎',
+    title: '天界巡狩者',
+    baseHp: 400,
+    baseAtk: 82,
+    baseDef: 30,
+    baseCrit: 0.28,
+    hpScale: 40,
+    atkScale: 7.8,
+    defScale: 3.2,
+    critScale: 0.0072,
+    enrageThreshold: 0.52,
+    enrageBonus: 0.4
+  },
+  {
+    emoji: '??',
+    name: '星環主教',
+    title: '天界占星官',
+    baseHp: 450,
+    baseAtk: 74,
+    baseDef: 36,
+    baseCrit: 0.26,
+    hpScale: 44,
+    atkScale: 7,
+    defScale: 3.7,
+    critScale: 0.0066,
+    enrageThreshold: 0.47,
+    enrageBonus: 0.38
+  }
+];
+
+const HUMAN_ENEMIES: EnemyTemplate[] = [
+  {
+    emoji: '???',
+    name: '羅因聖堂騎士',
+    title: '王都防衛軍',
+    baseHp: 210,
+    baseAtk: 44,
+    baseDef: 24,
+    baseCrit: 0.16,
+    hpScale: 24,
+    atkScale: 4.6,
+    defScale: 2.4,
+    critScale: 0.0046,
+    enrageThreshold: 0.4,
+    enrageBonus: 0.25
+  },
+  {
+    emoji: '??',
+    name: '薇爾聖劍使',
+    title: '聖殿討伐者',
+    baseHp: 190,
+    baseAtk: 52,
+    baseDef: 18,
+    baseCrit: 0.18,
+    hpScale: 23,
+    atkScale: 5,
+    defScale: 2,
+    critScale: 0.0048,
+    enrageThreshold: 0.46,
+    enrageBonus: 0.28
+  },
+  {
+    emoji: '?',
+    name: '希爾維亞聖女',
+    title: '神恩行者',
+    baseHp: 198,
+    baseAtk: 48,
+    baseDef: 20,
+    baseCrit: 0.2,
+    hpScale: 25,
+    atkScale: 4.8,
+    defScale: 2.2,
+    critScale: 0.005,
+    enrageThreshold: 0.44,
+    enrageBonus: 0.29
+  },
+  {
+    emoji: '???',
+    name: '艾德里克勇者',
+    title: '冠位討魔者',
+    baseHp: 220,
+    baseAtk: 56,
+    baseDef: 22,
+    baseCrit: 0.2,
+    hpScale: 27,
+    atkScale: 5.2,
+    defScale: 2.3,
+    critScale: 0.0052,
+    enrageThreshold: 0.48,
+    enrageBonus: 0.3
+  }
+];
+
 const rng = () => Math.random();
 const rollInt = (min: number, max: number) => Math.floor(rng() * (max - min + 1)) + min;
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
@@ -39,6 +340,31 @@ const emptyEquipment = (): Record<EquipmentSlot, EquipmentItem | null> => ({
   armor: null,
   legs: null
 });
+
+const getMonsterPoolByLevel = (level: number): EnemyTemplate[] => {
+  if (level <= 50) return NEWBIE_MONSTERS;
+  if (level > 1000) return HEAVEN_MONSTERS;
+  if (level > 500) return ABYSS_MONSTERS;
+
+  if (level > 350) return [...MID_MONSTERS, ...ABYSS_MONSTERS];
+  if (level > 150) return [...MID_MONSTERS, ...NEWBIE_MONSTERS];
+  return MID_MONSTERS;
+};
+
+const pickEnemyTemplate = (level: number, alignment: Alignment): { template: EnemyTemplate; faction: Boss['faction'] } => {
+  if (alignment === 'demon') {
+    return {
+      template: HUMAN_ENEMIES[rollInt(0, HUMAN_ENEMIES.length - 1)],
+      faction: 'human'
+    };
+  }
+
+  const pool = getMonsterPoolByLevel(level);
+  return {
+    template: pool[rollInt(0, pool.length - 1)],
+    faction: 'monster'
+  };
+};
 
 export const createLog = (
   actor: BattleLogEntry['actor'],
@@ -60,6 +386,18 @@ export const getBestPotionTier = (player: Player): PotionTier | null => {
   if (player.potions.standard > 0) return 'standard';
   if (player.potions.minor > 0) return 'minor';
   return null;
+};
+
+export const getDebuffedStats = (player: Player) => {
+  if (!player.temporaryDebuff) {
+    return { atk: player.atk, def: player.def, crit: player.crit };
+  }
+
+  return {
+    atk: Math.max(1, player.atk - player.temporaryDebuff.atkPenalty),
+    def: Math.max(0, player.def - player.temporaryDebuff.defPenalty),
+    crit: Math.max(0.01, player.crit - player.temporaryDebuff.critPenalty)
+  };
 };
 
 export const createPlayerFromClass = (classId: ClassId): Player => {
@@ -99,42 +437,50 @@ export const createPlayerFromClass = (classId: ClassId): Player => {
     unlockedSkillIds: [baseSkill],
     activeSkillId: baseSkill,
     equipped: emptyEquipment(),
-    inventoryEquipment: []
+    inventoryEquipment: [],
+    alignment: 'human',
+    temporaryDebuff: null
   };
 };
 
 const calcBossScale = (level: number, isBoss: boolean) => {
-  const normalScale = 1 + (level - 1) * 0.095;
-  if (!isBoss) return normalScale;
   const chapter = Math.max(1, Math.floor(level / 50));
-  return normalScale * (1.75 + chapter * 0.18);
+  const normalScale = 1 + (level - 1) * 0.088;
+
+  if (!isBoss) return normalScale;
+
+  const modeBonus = level > 1000 ? 1.55 : level > 500 ? 1.32 : 1;
+  return normalScale * (1.72 + chapter * 0.16) * modeBonus;
 };
 
-export const createBossForLevel = (level: number): Boss => {
+export const createBossForLevel = (level: number, alignment: Alignment = 'human'): Boss => {
   const isBoss = level % 50 === 0;
-  const template = BOSS_TEMPLATES[rollInt(0, BOSS_TEMPLATES.length - 1)];
+  const { template, faction } = pickEnemyTemplate(level, alignment);
   const scale = calcBossScale(level, isBoss);
 
   let maxHp = Math.round((template.baseHp + template.hpScale * (level - 1)) * scale);
-  let atk = Math.round((template.baseAtk + template.atkScale * (level - 1)) * (0.88 + scale * 0.08));
+  let atk = Math.round((template.baseAtk + template.atkScale * (level - 1)) * (0.86 + scale * 0.08));
 
   if (!isBoss && level <= 50) {
     maxHp = Math.min(maxHp, 50);
     atk = Math.min(atk, 50);
   }
 
-  const def = Math.round((template.baseDef + template.defScale * (level - 1)) * (0.86 + scale * 0.06));
-  const crit = clamp(template.baseCrit + template.critScale * (level - 1), 0.05, 2.4);
+  const def = Math.round((template.baseDef + template.defScale * (level - 1)) * (0.84 + scale * 0.06));
+  const crit = clamp(template.baseCrit + template.critScale * (level - 1), 0.04, 2.6);
   const chapter = Math.max(1, Math.floor(level / 50));
+
+  const modeTag = level > 1000 ? '天界' : level > 500 ? '深淵' : '地表';
+  const bossPrefix = faction === 'human' ? '討伐隊長' : '領主型';
 
   return {
     id: `boss-${level}-${Math.random().toString(36).slice(2, 8)}`,
-    emoji: isBoss ? '👹' : template.emoji,
-    name: isBoss ? `${template.name}・領主型` : template.name,
-    title: isBoss ? `第 ${chapter} 章首領` : template.title,
+    emoji: isBoss ? (faction === 'human' ? '??' : '??') : template.emoji,
+    name: isBoss ? `${template.name}?${bossPrefix}` : template.name,
+    title: isBoss ? `${modeTag}第 ${chapter} 章首領` : template.title,
     stage: level,
     isBoss,
-    portrait: generateMonsterPortrait(template.name, isBoss ? '👹' : template.emoji, level),
+    portrait: generateMonsterPortrait(template.name, isBoss ? (faction === 'human' ? '??' : '??') : template.emoji, level),
     hp: maxHp,
     maxHp,
     atk,
@@ -152,7 +498,8 @@ export const createBossForLevel = (level: number): Boss => {
     enrageThreshold: isBoss ? Math.max(0.42, template.enrageThreshold) : template.enrageThreshold,
     enrageBonus: isBoss ? template.enrageBonus + 0.18 : template.enrageBonus,
     enraged: false,
-    dropGold: Math.round((36 + level * 8 + rollInt(0, 16)) * (isBoss ? 2.4 : 1))
+    dropGold: Math.round((38 + level * 9 + rollInt(0, 18)) * (isBoss ? 2.6 : 1)),
+    faction
   };
 };
 
@@ -209,6 +556,24 @@ const applyEndTurnDecay = <T extends Player | Boss>(entity: T): T => {
   return next;
 };
 
+const tickTemporaryDebuff = (player: Player, logs: BattleLogEntry[], turn: number): Player => {
+  if (!player.temporaryDebuff) return player;
+
+  const remainingTurns = player.temporaryDebuff.remainingTurns - 1;
+  if (remainingTurns <= 0) {
+    logs.push(createLog('system', `負面效果「${player.temporaryDebuff.name}」已失效。`, 'info', turn));
+    return { ...player, temporaryDebuff: null };
+  }
+
+  return {
+    ...player,
+    temporaryDebuff: {
+      ...player.temporaryDebuff,
+      remainingTurns
+    }
+  };
+};
+
 const resolveBossEnrage = (boss: Boss, logs: BattleLogEntry[], turn: number): Boss => {
   if (boss.enraged) return boss;
   if (boss.hp <= boss.maxHp * boss.enrageThreshold) {
@@ -240,10 +605,11 @@ export const getBossIntent = (boss: Boss, turn: number): BossIntent => {
 };
 
 const handlePlayerAttack = (player: Player, boss: Boss, turn: number): ActionOutcome => {
+  const stats = getDebuffedStats(player);
   const nextPlayer = { ...player, combo: player.combo + 1, isGuarding: false };
   const critBonus = nextPlayer.classId === 'assassin' ? Math.min(0.25, nextPlayer.combo * 0.02) : 0;
 
-  const dmg = calculateDamage(nextPlayer.atk + nextPlayer.atkBuff, boss.def + boss.defBuff, nextPlayer.crit + nextPlayer.critBuff + critBonus);
+  const dmg = calculateDamage(stats.atk + nextPlayer.atkBuff, boss.def + boss.defBuff, stats.crit + nextPlayer.critBuff + critBonus);
 
   const shieldResult = applyShieldedDamage(boss.hp, boss.shield, dmg.finalDamage);
   const nextBoss = { ...boss, hp: shieldResult.nextHp, shield: shieldResult.nextShield };
@@ -272,7 +638,8 @@ const handlePlayerAttack = (player: Player, boss: Boss, turn: number): ActionOut
 };
 
 const handlePlayerGuard = (player: Player, boss: Boss, turn: number): ActionOutcome => {
-  const shieldGain = Math.round(player.def * (player.classId === 'warrior' ? 1.65 : 1.15) + 10);
+  const stats = getDebuffedStats(player);
+  const shieldGain = Math.round(stats.def * (player.classId === 'warrior' ? 1.65 : 1.15) + 10);
   const nextPlayer = {
     ...player,
     isGuarding: true,
@@ -340,13 +707,33 @@ const handlePlayerHealByItem = (player: Player, boss: Boss, turn: number): Actio
 
 const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutcome => {
   const logs: BattleLogEntry[] = [];
+  const stats = getDebuffedStats(player);
   let nextPlayer = { ...player, combo: 0, skillCooldown: 3 };
   let nextBoss = { ...boss };
   const skillId = player.activeSkillId;
 
+  if (skillId.endsWith('_divine_luminara') || skillId.endsWith('_astral_elysion') || skillId.endsWith('_demon_pact')) {
+    const themeBonus = skillId.endsWith('_demon_pact') ? 1.95 : skillId.endsWith('_astral_elysion') ? 1.78 : 1.66;
+    const bonusCrit = skillId.endsWith('_demon_pact') ? 0.2 : 0.14;
+    const dmg = calculateDamage(stats.atk + 34, Math.max(0, boss.def + boss.defBuff - 10), stats.crit + bonusCrit, themeBonus);
+    const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
+    nextBoss.hp = r.nextHp;
+    nextBoss.shield = r.nextShield;
+    nextPlayer.totalDamageDealt += r.appliedDamage;
+    nextPlayer.shield += Math.round(stats.def * 0.55);
+    logs.push(createLog('player', `神契/魔契技能爆發，造成 ${r.appliedDamage} 傷害。`, 'critical', turn));
+    return {
+      player: nextPlayer,
+      boss: nextBoss,
+      logs,
+      phase: nextBoss.hp <= 0 ? 'reward' : 'battle',
+      turn
+    };
+  }
+
   if (skillId.startsWith('warrior_')) {
     if (skillId === 'warrior_crush') {
-      const dmg = calculateDamage(player.atk + 16, Math.max(0, boss.def + boss.defBuff - 8), player.crit + 0.06, 1.45);
+      const dmg = calculateDamage(stats.atk + 16, Math.max(0, boss.def + boss.defBuff - 8), stats.crit + 0.06, 1.45);
       const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
       nextBoss.hp = r.nextHp;
       nextBoss.shield = r.nextShield;
@@ -354,8 +741,8 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
       nextPlayer.totalDamageDealt += r.appliedDamage;
       logs.push(createLog('player', `破甲重擊造成 ${r.appliedDamage} 點傷害，敵方防禦下降。`, 'critical', turn));
     } else if (skillId === 'warrior_counter') {
-      const shieldGain = Math.round(player.def * 2.4 + 18);
-      const counter = Math.round((player.atk + player.def) * 0.72);
+      const shieldGain = Math.round(stats.def * 2.4 + 18);
+      const counter = Math.round((stats.atk + stats.def) * 0.72);
       const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, counter);
       nextBoss.hp = r.nextHp;
       nextBoss.shield = r.nextShield;
@@ -365,8 +752,8 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
       logs.push(createLog('player', `反擊架勢：獲得 ${shieldGain} 護盾並反擊 ${r.appliedDamage} 傷害。`, 'buff', turn));
     } else if (skillId === 'warrior_colossus_wall' || skillId === 'warrior_aegis_requiem' || skillId === 'warrior_titan_overlord') {
       const bonus = skillId === 'warrior_colossus_wall' ? 1 : skillId === 'warrior_aegis_requiem' ? 1.3 : 1.65;
-      const shieldGain = Math.round(player.def * (2.8 * bonus) + 28);
-      const dmg = calculateDamage(player.atk + 10 * bonus, Math.max(0, boss.def + boss.defBuff - 6), player.crit + 0.08, 1.18 + 0.2 * bonus);
+      const shieldGain = Math.round(stats.def * (2.8 * bonus) + 28);
+      const dmg = calculateDamage(stats.atk + 10 * bonus, Math.max(0, boss.def + boss.defBuff - 6), stats.crit + 0.08, 1.18 + 0.2 * bonus);
       const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
       nextBoss.hp = r.nextHp;
       nextBoss.shield = r.nextShield;
@@ -375,14 +762,14 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
       nextPlayer.totalDamageDealt += r.appliedDamage;
       logs.push(createLog('player', `進階戰技發動：護盾 +${shieldGain}，造成 ${r.appliedDamage} 傷害。`, 'critical', turn));
     } else {
-      const shieldGain = Math.round(player.def * 2.05 + 15);
+      const shieldGain = Math.round(stats.def * 2.05 + 15);
       nextPlayer.shield += shieldGain;
       nextPlayer.defBuff += 4;
       logs.push(createLog('player', `鋼鐵堡壘：獲得 ${shieldGain} 護盾。`, 'buff', turn));
     }
   } else if (skillId.startsWith('mage_')) {
     if (skillId === 'mage_frost_prison') {
-      const dmg = calculateDamage(player.atk + 12, Math.max(0, boss.def + boss.defBuff - 4), player.crit + 0.06, 1.25);
+      const dmg = calculateDamage(stats.atk + 12, Math.max(0, boss.def + boss.defBuff - 4), stats.crit + 0.06, 1.25);
       const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
       nextBoss.hp = r.nextHp;
       nextBoss.shield = r.nextShield;
@@ -392,7 +779,7 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
     } else if (skillId === 'mage_chain_burst') {
       let total = 0;
       for (let i = 0; i < 3; i += 1) {
-        const dmg = calculateDamage(player.atk + 8, Math.max(0, boss.def + boss.defBuff - 3), player.crit + 0.04 + i * 0.02, 0.9);
+        const dmg = calculateDamage(stats.atk + 8, Math.max(0, boss.def + boss.defBuff - 3), stats.crit + 0.04 + i * 0.02, 0.9);
         const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
         nextBoss.hp = r.nextHp;
         nextBoss.shield = r.nextShield;
@@ -402,7 +789,7 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
       logs.push(createLog('player', `連鎖脈衝總計 ${total} 傷害。`, 'critical', turn));
     } else if (skillId === 'mage_stellar_tide' || skillId === 'mage_abyss_meteor' || skillId === 'mage_cosmic_judgement') {
       const bonus = skillId === 'mage_stellar_tide' ? 1.08 : skillId === 'mage_abyss_meteor' ? 1.35 : 1.65;
-      const dmg = calculateDamage(player.atk + 20 * bonus, Math.max(0, boss.def + boss.defBuff - 7), player.crit + 0.12, 1.55 + 0.22 * bonus);
+      const dmg = calculateDamage(stats.atk + 20 * bonus, Math.max(0, boss.def + boss.defBuff - 7), stats.crit + 0.12, 1.55 + 0.22 * bonus);
       const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
       nextBoss.hp = r.nextHp;
       nextBoss.shield = r.nextShield;
@@ -410,7 +797,7 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
       nextPlayer.totalDamageDealt += r.appliedDamage;
       logs.push(createLog('player', `進階魔法命中 ${r.appliedDamage} 傷害。`, 'critical', turn));
     } else {
-      const dmg = calculateDamage(player.atk + 14, Math.max(0, boss.def + boss.defBuff - 4), player.crit + 0.08, 1.5);
+      const dmg = calculateDamage(stats.atk + 14, Math.max(0, boss.def + boss.defBuff - 4), stats.crit + 0.08, 1.5);
       const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
       nextBoss.hp = r.nextHp;
       nextBoss.shield = r.nextShield;
@@ -419,24 +806,24 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
     }
   } else {
     if (skillId === 'assassin_bleed_mark') {
-      const first = calculateDamage(player.atk + 10, boss.def + boss.defBuff, player.crit + 0.08, 1.05);
-      const second = calculateDamage(player.atk + 8, Math.max(0, boss.def + boss.defBuff - 2), player.crit + 0.12, 0.95);
+      const first = calculateDamage(stats.atk + 10, boss.def + boss.defBuff, stats.crit + 0.08, 1.05);
+      const second = calculateDamage(stats.atk + 8, Math.max(0, boss.def + boss.defBuff - 2), stats.crit + 0.12, 0.95);
       const r1 = applyShieldedDamage(nextBoss.hp, nextBoss.shield, first.finalDamage);
       nextBoss.hp = r1.nextHp;
       nextBoss.shield = r1.nextShield;
       const r2 = applyShieldedDamage(nextBoss.hp, nextBoss.shield, second.finalDamage);
       nextBoss.hp = r2.nextHp;
       nextBoss.shield = r2.nextShield;
-      const total = r1.appliedDamage + r2.appliedDamage + Math.round(player.atk * 0.5);
-      const bleed = applyShieldedDamage(nextBoss.hp, nextBoss.shield, Math.round(player.atk * 0.5));
+      const total = r1.appliedDamage + r2.appliedDamage + Math.round(stats.atk * 0.5);
+      const bleed = applyShieldedDamage(nextBoss.hp, nextBoss.shield, Math.round(stats.atk * 0.5));
       nextBoss.hp = bleed.nextHp;
       nextBoss.shield = bleed.nextShield;
       nextPlayer.totalDamageDealt += total;
       logs.push(createLog('player', `裂傷印記連擊造成 ${total} 傷害。`, 'critical', turn));
     } else if (skillId === 'assassin_ghost_step') {
       nextPlayer.critBuff += 0.22;
-      nextPlayer.atkBuff += Math.round(player.atk * 0.18);
-      const dmg = calculateDamage(player.atk + 6, boss.def + boss.defBuff, player.crit + 0.16, 1.02);
+      nextPlayer.atkBuff += Math.round(stats.atk * 0.18);
+      const dmg = calculateDamage(stats.atk + 6, boss.def + boss.defBuff, stats.crit + 0.16, 1.02);
       const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
       nextBoss.hp = r.nextHp;
       nextBoss.shield = r.nextShield;
@@ -451,7 +838,7 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
       const hits = skillId === 'assassin_eternal_night' ? 5 : 4;
       let total = 0;
       for (let i = 0; i < hits; i += 1) {
-        const dmg = calculateDamage(player.atk + 7 * bonus, Math.max(0, boss.def + boss.defBuff - 1), player.crit + 0.12 + i * 0.03, 0.84 + bonus * 0.1);
+        const dmg = calculateDamage(stats.atk + 7 * bonus, Math.max(0, boss.def + boss.defBuff - 1), stats.crit + 0.12 + i * 0.03, 0.84 + bonus * 0.1);
         const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
         nextBoss.hp = r.nextHp;
         nextBoss.shield = r.nextShield;
@@ -462,7 +849,7 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
     } else {
       let total = 0;
       for (let i = 0; i < 3; i += 1) {
-        const dmg = calculateDamage(player.atk + 6, boss.def + boss.defBuff, player.crit + 0.05 + i * 0.02, 0.88);
+        const dmg = calculateDamage(stats.atk + 6, boss.def + boss.defBuff, stats.crit + 0.05 + i * 0.02, 0.88);
         const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, dmg.finalDamage);
         nextBoss.hp = r.nextHp;
         nextBoss.shield = r.nextShield;
@@ -487,6 +874,7 @@ const runBossAction = (player: Player, boss: Boss, turn: number): ActionOutcome 
   const intent = getBossIntent(boss, turn);
   let nextBoss = { ...boss };
   let nextPlayer = { ...player };
+  const stats = getDebuffedStats(nextPlayer);
 
   if (intent.id === 'focus') {
     const atkBoost = Math.max(3, Math.round(boss.atk * 0.16));
@@ -498,7 +886,7 @@ const runBossAction = (player: Player, boss: Boss, turn: number): ActionOutcome 
 
   const multi = intent.id === 'heavy' ? 1.45 : intent.id === 'drain' ? 0.95 : 1;
   const critBonus = intent.id === 'heavy' ? 0.04 : 0;
-  const damage = calculateDamage(nextBoss.atk + nextBoss.atkBuff, nextPlayer.def + nextPlayer.defBuff, nextBoss.crit + nextBoss.critBuff + critBonus, multi);
+  const damage = calculateDamage(nextBoss.atk + nextBoss.atkBuff, stats.def + nextPlayer.defBuff, nextBoss.crit + nextBoss.critBuff + critBonus, multi);
 
   let reducedDamage = damage.finalDamage;
   if (nextPlayer.isGuarding) {
@@ -568,6 +956,7 @@ export const performTurn = (action: BattleActionId, player: Player, boss: Boss, 
   currentBoss = resolveBossEnrage(currentBoss, logs, turn);
 
   if (currentBoss.hp <= 0) {
+    currentPlayer = tickTemporaryDebuff(currentPlayer, logs, turn);
     logs.push(createLog('system', `${currentBoss.emoji} ${currentBoss.name} 被擊敗。`, 'reward', turn));
     return { player: currentPlayer, boss: currentBoss, logs, phase: 'reward', turn };
   }
@@ -578,12 +967,14 @@ export const performTurn = (action: BattleActionId, player: Player, boss: Boss, 
   logs = logs.concat(bossOutcome.logs);
 
   if (currentPlayer.hp <= 0) {
+    currentPlayer = tickTemporaryDebuff(currentPlayer, logs, bossOutcome.turn);
     logs.push(createLog('system', '你被擊敗，旅程終止。', 'warning', turn));
     return { player: currentPlayer, boss: currentBoss, logs, phase: 'defeat', turn: bossOutcome.turn };
   }
 
   const normalized = normalizeAfterTurn(currentPlayer, currentBoss);
-  return { player: normalized.player, boss: normalized.boss, logs, phase: 'battle', turn: bossOutcome.turn };
+  const nextPlayer = tickTemporaryDebuff(normalized.player, logs, bossOutcome.turn);
+  return { player: nextPlayer, boss: normalized.boss, logs, phase: 'battle', turn: bossOutcome.turn };
 };
 
 export const applyVictoryRewards = (player: Player, boss: Boss): Player => {
@@ -640,5 +1031,30 @@ export const getActionDisabledReason = (action: BattleActionId, player: Player):
   return null;
 };
 
+export const getSkillDamagePreview = (player: Player, skillId: string): string => {
+  const stats = getDebuffedStats(player);
+  const base = Math.max(1, stats.atk + player.atkBuff);
+
+  const estimate = (multiplier: number, flat = 0) => {
+    const low = Math.max(1, Math.round((base + flat) * multiplier * 0.9));
+    const high = Math.max(1, Math.round((base + flat) * multiplier * 1.15));
+    return `${low} - ${high}`;
+  };
+
+  if (skillId === 'warrior_iron_bastion') return `傷害：0（護盾型）`;
+  if (skillId === 'warrior_counter') return `傷害：約 ${estimate(0.72, stats.def)}`;
+  if (skillId === 'warrior_crush') return `傷害：約 ${estimate(1.45, 16)}`;
+  if (skillId.startsWith('warrior_')) return `傷害：約 ${estimate(1.5, 18)}`;
+
+  if (skillId === 'mage_arcane_nova') return `傷害：約 ${estimate(1.5, 14)}`;
+  if (skillId === 'mage_frost_prison') return `傷害：約 ${estimate(1.25, 12)}`;
+  if (skillId === 'mage_chain_burst') return `傷害：約 ${estimate(2.7, 8)}（三段）`;
+  if (skillId.startsWith('mage_')) return `傷害：約 ${estimate(1.9, 20)}`;
+
+  if (skillId === 'assassin_shadow_flurry') return `傷害：約 ${estimate(2.64, 6)}（三段）`;
+  if (skillId === 'assassin_bleed_mark') return `傷害：約 ${estimate(2.1, 18)}（含流血）`;
+  if (skillId === 'assassin_ghost_step') return `傷害：約 ${estimate(1.02, 6)} + 自身增益`;
+  return `傷害：約 ${estimate(3.2, 10)}（多段）`;
+};
 
 
