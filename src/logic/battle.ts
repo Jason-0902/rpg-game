@@ -1,5 +1,5 @@
 ﻿import { CLASS_TEMPLATES } from '../data/classData';
-import { getBaseSkillId, getClassTitleByRank } from '../data/skillData';
+import { getClassTitleByRank, getInitialUnlockedSkillIds } from '../data/skillData';
 import { generateMonsterPortrait } from './imageGen';
 import {
   ActionOutcome,
@@ -402,7 +402,8 @@ export const getDebuffedStats = (player: Player) => {
 
 export const createPlayerFromClass = (classId: ClassId): Player => {
   const template = CLASS_TEMPLATES[classId];
-  const baseSkill = getBaseSkillId(classId);
+  const initialSkills = getInitialUnlockedSkillIds(classId);
+  const baseSkill = initialSkills[0];
 
   return {
     classId,
@@ -434,7 +435,7 @@ export const createPlayerFromClass = (classId: ClassId): Player => {
     totalDamageDealt: 0,
     totalDamageTaken: 0,
     defeatedBosses: 0,
-    unlockedSkillIds: [baseSkill],
+    unlockedSkillIds: initialSkills,
     activeSkillId: baseSkill,
     equipped: emptyEquipment(),
     inventoryEquipment: [],
@@ -708,7 +709,7 @@ const handlePlayerHealByItem = (player: Player, boss: Boss, turn: number): Actio
 const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutcome => {
   const logs: BattleLogEntry[] = [];
   const stats = getDebuffedStats(player);
-  let nextPlayer = { ...player, combo: 0, skillCooldown: 3 };
+  let nextPlayer = { ...player, combo: 0, skillCooldown: player.classId === 'god' ? 0 : 3 };
   let nextBoss = { ...boss };
   const skillId = player.activeSkillId;
 
@@ -732,11 +733,67 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
   }
 
   if (skillId.startsWith('god_')) {
-    const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, nextBoss.maxHp * 10);
-    nextBoss.hp = r.nextHp;
-    nextBoss.shield = r.nextShield;
-    nextPlayer.totalDamageDealt += r.appliedDamage;
-    logs.push(createLog('player', `神權降臨：${nextBoss.name} 直接湮滅。`, 'critical', turn));
+    let totalDamage = 0;
+    const strike = (damage: number) => {
+      const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, damage);
+      nextBoss.hp = r.nextHp;
+      nextBoss.shield = r.nextShield;
+      totalDamage += r.appliedDamage;
+      return r.appliedDamage;
+    };
+
+    if (skillId === 'god_genesis_judgement') {
+      strike(Math.round(nextBoss.maxHp * 1.9 + stats.atk * 12));
+      logs.push(createLog('player', `創世審判降臨，造成 ${totalDamage} 點毀滅傷害。`, 'critical', turn));
+    } else if (skillId === 'god_astral_annihilation') {
+      for (let i = 0; i < 5; i += 1) {
+        strike(Math.round(nextBoss.maxHp * 0.36 + stats.atk * (2.4 + i * 0.4)));
+      }
+      logs.push(createLog('player', `星河湮滅連擊，總計造成 ${totalDamage} 點傷害。`, 'critical', turn));
+    } else if (skillId === 'god_void_decree') {
+      strike(Math.round(nextBoss.maxHp * 2.3));
+      nextBoss.defBuff -= 99;
+      logs.push(createLog('player', `虛無敕令抹除存在，造成 ${totalDamage} 點真實傷害。`, 'critical', turn));
+    } else if (skillId === 'god_chrono_rewrite') {
+      nextPlayer.hp = nextPlayer.maxHp;
+      nextPlayer.shield += Math.round(nextPlayer.maxHp * 0.4);
+      strike(Math.round(nextBoss.maxHp * 1.35 + stats.atk * 8));
+      logs.push(createLog('player', `時序改寫完成：生命全滿，並造成 ${totalDamage} 點傷害。`, 'critical', turn));
+    } else if (skillId === 'god_heavenfall_lance') {
+      strike(Math.round(nextBoss.maxHp * 1.6 + stats.atk * 10));
+      nextBoss.defBuff -= 120;
+      logs.push(createLog('player', `天墜神槍貫穿敵陣，造成 ${totalDamage} 並瓦解防禦。`, 'critical', turn));
+    } else if (skillId === 'god_abyss_nullifier') {
+      strike(Math.round(nextBoss.maxHp * 1.45 + stats.atk * 7));
+      const leech = Math.round(totalDamage * 0.55);
+      nextPlayer.shield += leech;
+      logs.push(createLog('player', `深淵歸零吞噬生命，造成 ${totalDamage} 並獲得 ${leech} 護盾。`, 'critical', turn));
+    } else if (skillId === 'god_infinite_edge') {
+      for (let i = 0; i < 8; i += 1) {
+        strike(Math.round(nextBoss.maxHp * 0.24 + stats.atk * (1.4 + i * 0.25)));
+      }
+      nextPlayer.critBuff += 2.5;
+      logs.push(createLog('player', `無盡神刃八連斬，總計 ${totalDamage} 傷害。`, 'critical', turn));
+    } else if (skillId === 'god_singularity_collapse') {
+      strike(Math.round(nextBoss.maxHp * 1.4 + nextBoss.shield * 3.2 + stats.atk * 9));
+      logs.push(createLog('player', `奇點崩塌引爆，造成 ${totalDamage} 點空間毀傷。`, 'critical', turn));
+    } else if (skillId === 'god_eden_rebirth') {
+      nextPlayer.hp = nextPlayer.maxHp;
+      nextPlayer.atkBuff += 5000;
+      nextPlayer.defBuff += 5000;
+      nextPlayer.critBuff += 3;
+      strike(Math.round(nextBoss.maxHp * 1.2 + stats.atk * 8));
+      logs.push(createLog('player', `伊甸重生啟動，全屬神化並造成 ${totalDamage} 傷害。`, 'critical', turn));
+    } else if (skillId === 'god_final_omega') {
+      strike(nextBoss.maxHp * 100);
+      logs.push(createLog('player', `終焉Ω：${nextBoss.name} 被直接抹除。`, 'critical', turn));
+    } else {
+      strike(nextBoss.maxHp * 10);
+      logs.push(createLog('player', `神權降臨：${nextBoss.name} 直接湮滅。`, 'critical', turn));
+    }
+
+    nextPlayer.totalDamageDealt += totalDamage;
+    nextPlayer.skillCooldown = 0;
     return {
       player: nextPlayer,
       boss: nextBoss,
@@ -1040,7 +1097,7 @@ export const resetForNextBoss = (player: Player): Player => ({
 });
 
 export const getActionDisabledReason = (action: BattleActionId, player: Player): string | null => {
-  if (action === 'skill' && player.skillCooldown > 0) {
+  if (action === 'skill' && player.classId !== 'god' && player.skillCooldown > 0) {
     return `技能冷卻中：${player.skillCooldown}`;
   }
   return null;
@@ -1069,7 +1126,17 @@ export const getSkillDamagePreview = (player: Player, skillId: string): string =
   if (skillId === 'assassin_shadow_flurry') return `傷害：約 ${estimate(2.64, 6)}（三段）`;
   if (skillId === 'assassin_bleed_mark') return `傷害：約 ${estimate(2.1, 18)}（含流血）`;
   if (skillId === 'assassin_ghost_step') return `傷害：約 ${estimate(1.02, 6)} + 自身增益`;
-  if (skillId.startsWith('god_')) return `傷害：∞（神裁）`;
+  if (skillId === 'god_genesis_judgement') return `傷害：∞（單體毀滅）`;
+  if (skillId === 'god_astral_annihilation') return `傷害：∞（五連神擊）`;
+  if (skillId === 'god_void_decree') return `傷害：∞（無視防禦）`;
+  if (skillId === 'god_chrono_rewrite') return `傷害：∞（回滿 + 輸出）`;
+  if (skillId === 'god_heavenfall_lance') return `傷害：∞（破防貫穿）`;
+  if (skillId === 'god_abyss_nullifier') return `傷害：∞（吸收護盾）`;
+  if (skillId === 'god_infinite_edge') return `傷害：∞（八連斬）`;
+  if (skillId === 'god_singularity_collapse') return `傷害：∞（奇點爆裂）`;
+  if (skillId === 'god_eden_rebirth') return `傷害：∞（神化強化）`;
+  if (skillId === 'god_final_omega') return `傷害：∞（立即終焉）`;
+  if (skillId.startsWith('god_')) return `傷害：∞（神罰）`;
   return `傷害：約 ${estimate(3.2, 10)}（多段）`;
 };
 

@@ -22,9 +22,16 @@ const BASE_SKILLS: Record<ClassId, SkillDefinition[]> = {
     { id: 'assassin_ghost_step', classId: 'assassin', name: '鬼步', description: '提升爆擊與閃避節奏。', source: 'drop' }
   ],
   god: [
-    { id: 'god_divine_edict', classId: 'god', name: '神裁萬象', description: '直接降下神罰，瞬滅眼前敵人。', source: 'base' },
-    { id: 'god_heaven_split', classId: 'god', name: '天裂審判', description: '天界光槍貫穿萬物。', source: 'drop' },
-    { id: 'god_abyss_silence', classId: 'god', name: '深淵靜滅', description: '令深淵萬象歸於寂靜。', source: 'drop' }
+    { id: 'god_genesis_judgement', classId: 'god', name: '創世審判', description: '創世神光直擊，對單體造成滅絕級傷害。', source: 'base' },
+    { id: 'god_astral_annihilation', classId: 'god', name: '星河湮滅', description: '召喚星河崩潰，連續 5 段毀滅轟擊。', source: 'base' },
+    { id: 'god_void_decree', classId: 'god', name: '虛無敕令', description: '無視防禦直接抹除生命。', source: 'base' },
+    { id: 'god_chrono_rewrite', classId: 'god', name: '時序改寫', description: '回滿生命並重構戰局，附帶高額傷害。', source: 'base' },
+    { id: 'god_heavenfall_lance', classId: 'god', name: '天墜神槍', description: '貫穿天穹的一擊，並永久削弱敵防。', source: 'base' },
+    { id: 'god_abyss_nullifier', classId: 'god', name: '深淵歸零', description: '吞噬敵方生命並轉化為自身護盾。', source: 'base' },
+    { id: 'god_infinite_edge', classId: 'god', name: '無盡神刃', description: '高速 8 連斬，爆擊收益極端放大。', source: 'base' },
+    { id: 'god_singularity_collapse', classId: 'god', name: '奇點崩塌', description: '壓縮空間後引爆，對護盾與生命同時重創。', source: 'base' },
+    { id: 'god_eden_rebirth', classId: 'god', name: '伊甸重生', description: '全屬性神聖強化並造成神域衝擊。', source: 'base' },
+    { id: 'god_final_omega', classId: 'god', name: '終焉Ω', description: '最終裁決，直接終止目標存在。', source: 'base' }
   ]
 };
 
@@ -153,6 +160,8 @@ const EVOLUTION_TITLES: Record<ClassId, EvolutionTrack[]> = {
 const ALL_SKILLS = [...Object.values(BASE_SKILLS).flat(), ...Object.values(EVOLUTION_SKILLS).flat(), ...SPECIAL_EVENT_SKILLS];
 
 export const getBaseSkillId = (classId: ClassId): string => BASE_SKILLS[classId][0].id;
+export const getInitialUnlockedSkillIds = (classId: ClassId): string[] =>
+  classId === 'god' ? BASE_SKILLS.god.map((s) => s.id) : [BASE_SKILLS[classId][0].id];
 
 export const getSkillById = (id: string): SkillDefinition | null => {
   return ALL_SKILLS.find((s) => s.id === id) ?? null;

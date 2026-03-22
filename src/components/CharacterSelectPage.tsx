@@ -3,7 +3,7 @@ import { ClassId } from '../types/game';
 import CharacterCard from './CharacterCard';
 import { CHARACTER_LIST, GOD_CHARACTER } from '../data/characterSelectData';
 import { CharacterInfo } from '../types/characterSelect';
-import { isSecureOwnerMode } from '../logic/security';
+import { isCreatorUnlocked, isSecureOwnerMode, setCreatorUnlocked, verifyCreatorPassword } from '../logic/security';
 
 interface CharacterSelectPageProps {
   onSelectRole: (classId: ClassId, startLevel?: number) => void;
@@ -18,9 +18,24 @@ const roleToClassId: Record<CharacterInfo['role'], ClassId> = {
 
 const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
   const [selected, setSelected] = useState<CharacterInfo | null>(null);
+  const [creatorUnlocked, setCreatorUnlockedState] = useState<boolean>(() => isCreatorUnlocked());
 
-  const canUseGod = useMemo(() => isSecureOwnerMode(), []);
+  const canUseGod = useMemo(() => isSecureOwnerMode() || creatorUnlocked, [creatorUnlocked]);
   const list = useMemo(() => (canUseGod ? [...CHARACTER_LIST, GOD_CHARACTER] : CHARACTER_LIST), [canUseGod]);
+
+  const unlockCreatorRole = () => {
+    const input = window.prompt('請輸入創作者密碼以解鎖隱藏職業：');
+    if (!input) return;
+
+    if (verifyCreatorPassword(input)) {
+      setCreatorUnlocked(true);
+      setCreatorUnlockedState(true);
+      window.alert('創作者模式已啟用，神職業已解鎖。');
+      return;
+    }
+
+    window.alert('密碼錯誤。');
+  };
 
   const handleSelect = (character: CharacterInfo) => {
     setSelected(character);
@@ -51,6 +66,15 @@ const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-400/80" />
           </div>
           {canUseGod ? <p className="text-xs text-amber-200">創作者權限已啟用：隱藏職業「神」已解鎖</p> : null}
+          {!canUseGod ? (
+            <button
+              type="button"
+              onClick={unlockCreatorRole}
+              className="mt-2 text-[11px] tracking-[0.12em] text-slate-400 underline decoration-slate-600 underline-offset-4 hover:text-amber-200"
+            >
+              創作者解鎖
+            </button>
+          ) : null}
         </header>
 
         <section className="grid gap-4 md:gap-6 md:grid-cols-2 xl:grid-cols-3">

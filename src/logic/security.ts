@@ -33,3 +33,34 @@ export const isSecureOwnerMode = (): boolean => {
   const localhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   return import.meta.env.DEV && localhost;
 };
+
+const CREATOR_UNLOCK_KEY = 'rpg_creator_unlocked_v1';
+const CREATOR_PASSWORD_HASH = '97a90922';
+
+const hashPassword = (value: string): string => {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = (hash << 5) - hash + value.charCodeAt(i);
+    hash |= 0;
+  }
+  return (hash >>> 0).toString(16);
+};
+
+export const verifyCreatorPassword = (password: string): boolean => {
+  if (!password) return false;
+  return hashPassword(password) === CREATOR_PASSWORD_HASH;
+};
+
+export const isCreatorUnlocked = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return window.localStorage.getItem(CREATOR_UNLOCK_KEY) === '1';
+};
+
+export const setCreatorUnlocked = (value: boolean): void => {
+  if (typeof window === 'undefined') return;
+  if (value) {
+    window.localStorage.setItem(CREATOR_UNLOCK_KEY, '1');
+  } else {
+    window.localStorage.removeItem(CREATOR_UNLOCK_KEY);
+  }
+};
