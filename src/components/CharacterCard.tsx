@@ -27,15 +27,15 @@ const CharacterCard = ({ character, selected, onSelect, index }: CharacterCardPr
           : 'border-slate-400/25 shadow-[0_12px_36px_rgba(0,0,0,0.5)] hover:border-amber-200/55 hover:shadow-[0_0_32px_rgba(99,102,241,0.35)]'
       }`}
     >
-      <img src={character.image} alt={character.cnName} className="h-[500px] w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+      <img src={character.image} alt={character.roleZh} className="h-[500px] w-full object-cover transition-transform duration-700 group-hover:scale-105" />
 
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/68 to-black/10" />
       <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-black/30 to-transparent" />
 
       <div className="absolute inset-x-0 bottom-0 p-5">
         <div className="text-center">
-          <p className="font-display text-[38px] leading-none tracking-[0.08em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">{character.cnName}</p>
-          <p className="mt-1 font-display text-[30px] leading-none tracking-[0.09em] text-slate-100">{character.enName}</p>
+          <p className="font-display text-[38px] leading-none tracking-[0.08em] text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">{character.roleZh}</p>
+          <p className="mt-1 font-display text-[30px] leading-none tracking-[0.09em] text-slate-100">{character.role.toUpperCase()}</p>
         </div>
 
         <div className={`mx-auto mt-4 flex w-fit items-center gap-2 rounded-full border bg-gradient-to-r px-4 py-1 text-xs tracking-[0.16em] ${roleStyle[character.role]}`}>

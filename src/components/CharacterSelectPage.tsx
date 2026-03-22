@@ -55,7 +55,7 @@ const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
 
         <footer className="mt-7 border-t border-amber-500/35 pt-4 text-center">
           <p className="font-display text-sm tracking-[0.16em] text-slate-200">
-            {selected ? `已選擇 ${selected.cnName} · ${selected.roleZh}` : '請選擇你的起始角色'}
+            {selected ? `已選擇 ${selected.roleZh}` : '請選擇你的起始職業'}
           </p>
         </footer>
       </main>

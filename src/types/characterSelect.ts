@@ -2,8 +2,6 @@
 
 export interface CharacterInfo {
   id: string;
-  cnName: string;
-  enName: string;
   role: RoleType;
   roleZh: string;
   image: string;

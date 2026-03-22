@@ -5,9 +5,7 @@ const cimg = (name: string) => `${base}img/characters/${name}.png`;
 
 export const CHARACTER_LIST: CharacterInfo[] = [
   {
-    id: 'aelin',
-    cnName: '艾琳・艾爾文',
-    enName: 'AELIN SILVERWIND',
+    id: 'warrior',
     role: 'Warrior',
     roleZh: '戰士',
     image: cimg('warrior'),
@@ -18,9 +16,7 @@ export const CHARACTER_LIST: CharacterInfo[] = [
     skill: '聖焰突進與防壁重斬，兼具開戰抗壓與破甲能力。'
   },
   {
-    id: 'liana',
-    cnName: '莉亞娜・星詠',
-    enName: 'LIANA STARGAZER',
+    id: 'mage',
     role: 'Mage',
     roleZh: '法師',
     image: cimg('mage'),
@@ -31,9 +27,7 @@ export const CHARACTER_LIST: CharacterInfo[] = [
     skill: '展開星環法陣，連續施法造成高段數魔法爆發。'
   },
   {
-    id: 'kage',
-    cnName: '影・夜隼',
-    enName: 'KAGE NIGHTHAWK',
+    id: 'assassin',
     role: 'Assassin',
     roleZh: '刺客',
     image: cimg('assassin'),
