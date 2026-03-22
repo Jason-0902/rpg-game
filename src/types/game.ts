@@ -1,4 +1,4 @@
-﻿export type ClassId = 'warrior' | 'mage' | 'assassin';
+﻿export type ClassId = 'warrior' | 'mage' | 'assassin' | 'god';
 
 export type Alignment = 'human' | 'demon';
 
@@ -271,3 +271,4 @@ export const STORAGE_KEYS = {
   gameState: 'rpg_boss_battle_state_v5',
   runSummary: 'rpg_boss_battle_last_run_v5'
 } as const;
+

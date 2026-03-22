@@ -1,5 +1,6 @@
 ﻿import { CLASS_TEMPLATES } from '../data/classData';
 import { ClassId } from '../types/game';
+import { sanitizeImageUrl } from '../logic/security';
 import Panel from './Panel';
 import ResourceBar from './ResourceBar';
 
@@ -25,7 +26,7 @@ const ClassSelection = ({ onSelect }: ClassSelectionProps) => {
             <Panel key={classId} title={c.name} subtitle={c.description} className={`${c.cardTheme} relative overflow-hidden`}>
               <div className="space-y-3">
                 <div className="overflow-hidden rounded-xl border border-slate-600/70">
-                  <img src={c.avatar} alt={c.name} className="h-40 w-full object-cover" />
+                  <img src={sanitizeImageUrl(c.avatar, '/img/characters/warrior.png')} alt={c.name} className="h-40 w-full object-cover" />
                 </div>
 
                 <ResourceBar value={c.base.hp} max={c.base.hp} color="hp" label="生命" />
@@ -56,3 +57,4 @@ const ClassSelection = ({ onSelect }: ClassSelectionProps) => {
 };
 
 export default ClassSelection;
+

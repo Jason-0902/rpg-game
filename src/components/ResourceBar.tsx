@@ -17,6 +17,7 @@ const palette = {
 
 const ResourceBar = ({ value, max, color, label, showValue = true }: ResourceBarProps) => {
   const percent = max <= 0 ? 0 : Math.max(0, Math.min(100, (value / max) * 100));
+  const asText = (n: number) => (n >= 999999999 ? '∞' : `${Math.round(n)}`);
 
   return (
     <div className="space-y-1">
@@ -24,7 +25,7 @@ const ResourceBar = ({ value, max, color, label, showValue = true }: ResourceBar
         <span>{label}</span>
         {showValue ? (
           <span className="font-display text-[11px] uppercase tracking-wide text-slate-200">
-            {Math.round(value)} / {Math.round(max)}
+            {asText(value)} / {asText(max)}
           </span>
         ) : null}
       </div>

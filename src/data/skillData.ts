@@ -20,6 +20,11 @@ const BASE_SKILLS: Record<ClassId, SkillDefinition[]> = {
     { id: 'assassin_shadow_flurry', classId: 'assassin', name: '暗影連斬', description: '多段突刺，爆擊率額外提升。', source: 'base' },
     { id: 'assassin_bleed_mark', classId: 'assassin', name: '裂傷印記', description: '附加流血與爆擊追擊。', source: 'drop' },
     { id: 'assassin_ghost_step', classId: 'assassin', name: '鬼步', description: '提升爆擊與閃避節奏。', source: 'drop' }
+  ],
+  god: [
+    { id: 'god_divine_edict', classId: 'god', name: '神裁萬象', description: '直接降下神罰，瞬滅眼前敵人。', source: 'base' },
+    { id: 'god_heaven_split', classId: 'god', name: '天裂審判', description: '天界光槍貫穿萬物。', source: 'drop' },
+    { id: 'god_abyss_silence', classId: 'god', name: '深淵靜滅', description: '令深淵萬象歸於寂靜。', source: 'drop' }
   ]
 };
 
@@ -101,7 +106,8 @@ const EVOLUTION_SKILLS: Record<ClassId, SkillDefinition[]> = {
       source: 'evolution',
       evolutionRank: 3
     }
-  ]
+  ],
+  god: []
 };
 
 const SPECIAL_EVENT_SKILLS: SkillDefinition[] = [
@@ -113,7 +119,10 @@ const SPECIAL_EVENT_SKILLS: SkillDefinition[] = [
   { id: 'mage_demon_pact', classId: 'mage', name: '魔契深紅', description: '惡魔契約技：深紅魔炎爆發。', source: 'drop' },
   { id: 'assassin_divine_luminara', classId: 'assassin', name: '曜星幻斬', description: '女神祝福技：高速多段斬擊。', source: 'drop' },
   { id: 'assassin_astral_elysion', classId: 'assassin', name: '銀弦斷界', description: '星座祝福技：瞬連刺與處決。', source: 'drop' },
-  { id: 'assassin_demon_pact', classId: 'assassin', name: '魔契夜葬', description: '惡魔契約技：禁忌連斬與高爆擊。', source: 'drop' }
+  { id: 'assassin_demon_pact', classId: 'assassin', name: '魔契夜葬', description: '惡魔契約技：禁忌連斬與高爆擊。', source: 'drop' },
+  { id: 'god_divine_luminara', classId: 'god', name: '神律曙光', description: '神祇賜福後的聖光裁決。', source: 'drop' },
+  { id: 'god_astral_elysion', classId: 'god', name: '星界神諭', description: '星座授權的超域審判。', source: 'drop' },
+  { id: 'god_demon_pact', classId: 'god', name: '逆神魔契', description: '神與魔契合的終極禁術。', source: 'drop' }
 ];
 
 const EVOLUTION_TITLES: Record<ClassId, EvolutionTrack[]> = {
@@ -137,7 +146,8 @@ const EVOLUTION_TITLES: Record<ClassId, EvolutionTrack[]> = {
     { rank: 2, title: '夜幕裁決者' },
     { rank: 3, title: '深淵終結者' },
     { rank: 4, title: '永夜冥皇' }
-  ]
+  ],
+  god: [{ rank: 0, title: '神' }]
 };
 
 const ALL_SKILLS = [...Object.values(BASE_SKILLS).flat(), ...Object.values(EVOLUTION_SKILLS).flat(), ...SPECIAL_EVENT_SKILLS];
@@ -168,4 +178,3 @@ export const rollSkillDrop = (classId: ClassId, owned: string[]): SkillDefinitio
   if (Math.random() > 0.35) return null;
   return pool[Math.floor(Math.random() * pool.length)];
 };
-

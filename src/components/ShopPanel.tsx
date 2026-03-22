@@ -1,4 +1,5 @@
 ﻿import { EquipmentRarity, EquipmentItem } from '../types/game';
+import { sanitizeImageUrl } from '../logic/security';
 import Panel from './Panel';
 
 interface ShopPanelProps {
@@ -32,7 +33,7 @@ const ShopPanel = ({ gold, offers, onBuy, onLeave }: ShopPanelProps) => {
         {offers.map((item) => (
           <div key={item.id} className="rounded-lg border border-slate-600/70 bg-slate-900/60 p-3 text-xs">
             <div className="flex items-start gap-2">
-              <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
+              <img src={sanitizeImageUrl(item.image, '/img/characters/assassin.png')} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
               <div className="flex-1">
                 <p className="font-display text-sm text-slate-100">{item.name}</p>
                 <p className="text-amber-200">{rarityLabel[item.rarity]} </p>
@@ -56,5 +57,6 @@ const ShopPanel = ({ gold, offers, onBuy, onLeave }: ShopPanelProps) => {
 };
 
 export default ShopPanel;
+
 
 

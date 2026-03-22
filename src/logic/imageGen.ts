@@ -1,4 +1,5 @@
 ﻿import { ClassId, EquipmentRarity, EquipmentSlot } from '../types/game';
+import { escapeSvgText } from './security';
 
 const encodeSvg = (svg: string) => `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 
@@ -14,7 +15,7 @@ const classTheme = (classId: ClassId) => {
   if (classId === 'warrior') {
     return { hair: '#53d6b4', eyeTop: '#9afff2', eyeBottom: '#2aa596', costume: '#22304f', line: '#10182d' };
   }
-  if (classId === 'mage') {
+  if (classId === 'mage' || classId === 'god') {
     return { hair: '#8d78ff', eyeTop: '#b8d3ff', eyeBottom: '#5578f2', costume: '#2f2f66', line: '#16183a' };
   }
   return { hair: '#ff6aa8', eyeTop: '#ffc3db', eyeBottom: '#e24386', costume: '#3a2644', line: '#281628' };
@@ -24,6 +25,7 @@ export const generateClassAvatar = (classId: ClassId, label: string): string => 
   const seed = classId.split('').reduce((sum, c) => sum + c.charCodeAt(0), 313);
   const { p1, p2, p3, p4 } = palette(seed);
   const t = classTheme(classId);
+  const safeLabel = escapeSvgText(label);
 
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 520'>
   <defs>
@@ -85,7 +87,7 @@ export const generateClassAvatar = (classId: ClassId, label: string): string => 
     <path d='M492 230 Q536 214 576 236' stroke='${t.line}' stroke-width='4' fill='none' stroke-linecap='round'/>
   </g>
 
-  <text x='450' y='486' text-anchor='middle' font-size='40' fill='#ffffff' font-family='Segoe UI, Noto Sans TC, sans-serif' letter-spacing='2'>${label}</text>
+  <text x='450' y='486' text-anchor='middle' font-size='40' fill='#ffffff' font-family='Segoe UI, Noto Sans TC, sans-serif' letter-spacing='2'>${safeLabel}</text>
   </svg>`;
 
   return encodeSvg(svg);
@@ -96,6 +98,8 @@ export const generateMonsterPortrait = (name: string, emoji: string, stage: numb
   const { p1, p2, p3, p4 } = palette(seed);
   const eyeTop = stage % 2 === 0 ? '#ffc6df' : '#bde4ff';
   const eyeBottom = stage % 2 === 0 ? '#df4f8b' : '#4f8fe8';
+  const safeName = escapeSvgText(name);
+  const safeEmoji = escapeSvgText(emoji);
 
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 960 540'>
   <defs>
@@ -147,8 +151,8 @@ export const generateMonsterPortrait = (name: string, emoji: string, stage: numb
     <path d='M422 364 Q480 404 538 364' stroke='#f05c8e' stroke-width='9' fill='none' stroke-linecap='round'/>
   </g>
 
-  <text x='480' y='94' text-anchor='middle' font-size='54' font-family='Segoe UI Emoji'>${emoji}</text>
-  <text x='480' y='506' text-anchor='middle' font-size='42' fill='#ffffff' font-family='Segoe UI, Noto Sans TC, sans-serif'>${name}</text>
+  <text x='480' y='94' text-anchor='middle' font-size='54' font-family='Segoe UI Emoji'>${safeEmoji}</text>
+  <text x='480' y='506' text-anchor='middle' font-size='42' fill='#ffffff' font-family='Segoe UI, Noto Sans TC, sans-serif'>${safeName}</text>
   </svg>`;
 
   return encodeSvg(svg);
@@ -160,6 +164,9 @@ export const generateEquipmentImage = (slot: EquipmentSlot, level: number, rarit
   const badge = rarity === 'mythic' ? '✦' : rarity === 'legendary' ? '★' : rarity === 'advanced' ? '◆' : rarity === 'fine' ? '⬢' : '●';
   const slotLabel = { head: '頭', gloves: '手', weapon: '武', shield: '盾', necklace: '鍊', shoes: '鞋', armor: '衣', legs: '腿' }[slot];
 
+  const safeBadge = escapeSvgText(badge);
+  const safeSlotLabel = escapeSvgText(slotLabel);
+
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 220 220'>
   <defs>
     <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
@@ -169,8 +176,8 @@ export const generateEquipmentImage = (slot: EquipmentSlot, level: number, rarit
   </defs>
   <rect width='220' height='220' rx='24' fill='url(#g)'/>
   <circle cx='110' cy='100' r='56' fill='${p3}' opacity='0.86'/>
-  <text x='110' y='112' text-anchor='middle' font-size='34' fill='white' font-family='Noto Sans TC, sans-serif'>${slotLabel}</text>
-  <text x='34' y='38' text-anchor='middle' font-size='28' fill='white'>${badge}</text>
+  <text x='110' y='112' text-anchor='middle' font-size='34' fill='white' font-family='Noto Sans TC, sans-serif'>${safeSlotLabel}</text>
+  <text x='34' y='38' text-anchor='middle' font-size='28' fill='white'>${safeBadge}</text>
   </svg>`;
 
   return encodeSvg(svg);

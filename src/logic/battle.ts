@@ -731,6 +731,21 @@ const handlePlayerSkill = (player: Player, boss: Boss, turn: number): ActionOutc
     };
   }
 
+  if (skillId.startsWith('god_')) {
+    const r = applyShieldedDamage(nextBoss.hp, nextBoss.shield, nextBoss.maxHp * 10);
+    nextBoss.hp = r.nextHp;
+    nextBoss.shield = r.nextShield;
+    nextPlayer.totalDamageDealt += r.appliedDamage;
+    logs.push(createLog('player', `神權降臨：${nextBoss.name} 直接湮滅。`, 'critical', turn));
+    return {
+      player: nextPlayer,
+      boss: nextBoss,
+      logs,
+      phase: nextBoss.hp <= 0 ? 'reward' : 'battle',
+      turn
+    };
+  }
+
   if (skillId.startsWith('warrior_')) {
     if (skillId === 'warrior_crush') {
       const dmg = calculateDamage(stats.atk + 16, Math.max(0, boss.def + boss.defBuff - 8), stats.crit + 0.06, 1.45);
@@ -1054,6 +1069,7 @@ export const getSkillDamagePreview = (player: Player, skillId: string): string =
   if (skillId === 'assassin_shadow_flurry') return `傷害：約 ${estimate(2.64, 6)}（三段）`;
   if (skillId === 'assassin_bleed_mark') return `傷害：約 ${estimate(2.1, 18)}（含流血）`;
   if (skillId === 'assassin_ghost_step') return `傷害：約 ${estimate(1.02, 6)} + 自身增益`;
+  if (skillId.startsWith('god_')) return `傷害：∞（神裁）`;
   return `傷害：約 ${estimate(3.2, 10)}（多段）`;
 };
 

@@ -1,24 +1,36 @@
-﻿import { useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { ClassId } from '../types/game';
 import CharacterCard from './CharacterCard';
-import { CHARACTER_LIST } from '../data/characterSelectData';
+import { CHARACTER_LIST, GOD_CHARACTER } from '../data/characterSelectData';
 import { CharacterInfo } from '../types/characterSelect';
+import { isSecureOwnerMode } from '../logic/security';
 
 interface CharacterSelectPageProps {
-  onSelectRole: (classId: ClassId) => void;
+  onSelectRole: (classId: ClassId, startLevel?: number) => void;
 }
 
 const roleToClassId: Record<CharacterInfo['role'], ClassId> = {
   Warrior: 'warrior',
   Mage: 'mage',
-  Assassin: 'assassin'
+  Assassin: 'assassin',
+  God: 'god'
 };
 
 const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
   const [selected, setSelected] = useState<CharacterInfo | null>(null);
 
+  const canUseGod = useMemo(() => isSecureOwnerMode(), []);
+  const list = useMemo(() => (canUseGod ? [...CHARACTER_LIST, GOD_CHARACTER] : CHARACTER_LIST), [canUseGod]);
+
   const handleSelect = (character: CharacterInfo) => {
     setSelected(character);
+
+    if (character.role === 'God') {
+      const goHeaven = window.confirm('神職業已啟用。按「確定」直達天界（1001層），按「取消」前往深淵（501層）。');
+      onSelectRole('god', goHeaven ? 1001 : 501);
+      return;
+    }
+
     onSelectRole(roleToClassId[character.role]);
   };
 
@@ -38,10 +50,11 @@ const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
             <span className="text-amber-300">◆</span>
             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-amber-400/80" />
           </div>
+          {canUseGod ? <p className="text-xs text-amber-200">創作者權限已啟用：隱藏職業「神」已解鎖</p> : null}
         </header>
 
         <section className="grid gap-4 md:gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {CHARACTER_LIST.map((character, index) => (
+          {list.map((character, index) => (
             <CharacterCard
               key={character.id}
               character={character}
@@ -63,4 +76,3 @@ const CharacterSelectPage = ({ onSelectRole }: CharacterSelectPageProps) => {
 };
 
 export default CharacterSelectPage;
-

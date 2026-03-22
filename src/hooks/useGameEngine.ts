@@ -251,9 +251,10 @@ export const useGameEngine = () => {
     });
   }, [state]);
 
-  const startNewRun = useCallback((classId: ClassId) => {
+  const startNewRun = useCallback((classId: ClassId, startLevel = 1) => {
     const player = createPlayerFromClass(classId);
-    const boss = createBossForLevel(1, player.alignment);
+    const normalizedStart = Math.max(1, startLevel);
+    const boss = createBossForLevel(normalizedStart, player.alignment);
 
     setState((prev) => ({
       ...prev,
@@ -261,10 +262,11 @@ export const useGameEngine = () => {
       boss,
       logs: [
         createLog('system', `你選擇了「${CLASS_TEMPLATES[classId].name}」，旅程開始。`, 'info', 1),
+        createLog('system', classId === 'god' ? '神格啟動，你可直接踏入高階領域。' : `${boss.emoji} ${boss.name} 出現。`, 'warning', 1),
         createLog('system', `${boss.emoji} ${boss.name} 出現。`, 'warning', 1)
       ],
       phase: 'battle',
-      stageLevel: 1,
+      stageLevel: normalizedStart,
       turn: 1,
       reward: null,
       shopOffers: [],

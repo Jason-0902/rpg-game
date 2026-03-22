@@ -38,3 +38,15 @@ export const CHARACTER_LIST: CharacterInfo[] = [
     skill: '瞬步背刺並疊加處決印記，以高爆擊連段終結目標。'
   }
 ];
+
+export const GOD_CHARACTER: CharacterInfo = {
+  id: 'god',
+  role: 'God',
+  roleZh: '神',
+  image: cimg('mage'),
+  hp: 999999999,
+  atk: 999999999,
+  def: 999999999,
+  crit: 9999,
+  skill: '神裁：一念斷界。可直接前往深淵或天界，並以神格碾壓一切。'
+};

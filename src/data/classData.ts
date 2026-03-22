@@ -1,7 +1,9 @@
 ﻿import { ClassTemplate } from '../types/game';
 
 const base = import.meta.env.BASE_URL;
-const cimg = (name: 'warrior' | 'mage' | 'assassin') => `${base}img/characters/${name}.png`;
+const cimg = (name: 'warrior' | 'mage' | 'assassin' | 'god') => `${base}img/characters/${name}.png`;
+
+const GOD_STAT = 999999999;
 
 export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
   warrior: {
@@ -71,6 +73,29 @@ export const CLASS_TEMPLATES: Record<ClassTemplate['id'], ClassTemplate> = {
       atk: 5,
       def: 1.8,
       crit: 0.013
+    }
+  },
+  god: {
+    id: 'god',
+    name: '神',
+    short: '神',
+    description: '創世級存在，擁有近乎無限的神格之力。',
+    passive: '神權宣告：你的數值無上限且戰鬥主導權絕對。',
+    skillName: '神裁萬象',
+    skillDescription: '對目標降下神罰，直接蒸發其生命。',
+    avatar: cimg('mage'),
+    cardTheme: 'hero-card-mage',
+    base: {
+      hp: GOD_STAT,
+      atk: GOD_STAT,
+      def: GOD_STAT,
+      crit: 99
+    },
+    growth: {
+      hp: 0,
+      atk: 0,
+      def: 0,
+      crit: 0
     }
   }
 };

@@ -2,6 +2,7 @@
 import { CLASS_TEMPLATES } from '../data/classData';
 import { formatPercent } from '../logic/utils';
 import { Boss, Player } from '../types/game';
+import { sanitizeImageUrl } from '../logic/security';
 import Panel from './Panel';
 import ResourceBar from './ResourceBar';
 
@@ -19,22 +20,25 @@ const StatCell = ({ label, value }: { label: string; value: string | number }) =
 
 const StatusPanel = ({ player, boss }: StatusPanelProps) => {
   const template = CLASS_TEMPLATES[player.classId];
+  const isGod = player.classId === 'god';
+  const fmt = (v: number) => (isGod ? '∞' : v);
+  const fmtCrit = (v: number) => (isGod ? '∞%' : formatPercent(v));
 
   return (
     <div className="grid gap-3 md:gap-4 xl:grid-cols-2">
       <Panel title={`玩家 - ${player.classTitle}`} subtitle={`等級 ${player.level} | 進階階級 ${player.classRank} | 已擊敗 ${player.defeatedBosses} 隻怪物`}>
         <div className="space-y-3">
           <div className="overflow-hidden rounded-xl border border-slate-600/70 bg-slate-950/70 p-1">
-            <img src={template.avatar} alt={template.name} className="h-36 w-full rounded-lg object-contain object-center md:h-44" />
+            <img src={sanitizeImageUrl(template.avatar, '/img/characters/warrior.png')} alt={template.name} className="h-36 w-full rounded-lg object-contain object-center md:h-44" />
           </div>
           <ResourceBar value={player.hp} max={player.maxHp} color="hp" label="生命" />
           <ResourceBar value={player.shield} max={Math.max(1, player.maxHp * 0.55)} color="shield" label="護盾" />
           <ResourceBar value={player.exp} max={player.expToNext} color="mana" label="職業經驗值" />
 
           <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-            <StatCell label="攻擊" value={player.atk + player.atkBuff} />
-            <StatCell label="防禦" value={player.def + player.defBuff} />
-            <StatCell label="爆擊" value={formatPercent(player.crit + player.critBuff)} />
+            <StatCell label="攻擊" value={fmt(player.atk + player.atkBuff)} />
+            <StatCell label="防禦" value={fmt(player.def + player.defBuff)} />
+            <StatCell label="爆擊" value={fmtCrit(player.crit + player.critBuff)} />
             <StatCell label="金錢" value={player.gold} />
           </div>
 
@@ -60,7 +64,7 @@ const StatusPanel = ({ player, boss }: StatusPanelProps) => {
       >
         <div className="space-y-3">
           <div className="overflow-hidden rounded-xl border border-slate-600/70 bg-slate-950/50">
-            <img src={boss.portrait} alt={boss.name} className="h-36 w-full object-contain object-center md:h-44" />
+            <img src={sanitizeImageUrl(boss.portrait, '/img/characters/mage.png')} alt={boss.name} className="h-36 w-full object-contain object-center md:h-44" />
           </div>
 
           <motion.div animate={boss.enraged ? { scale: [1, 1.02, 1] } : { scale: 1 }} transition={{ repeat: Infinity, duration: 1.4 }}>
@@ -81,3 +85,4 @@ const StatusPanel = ({ player, boss }: StatusPanelProps) => {
 };
 
 export default StatusPanel;
+

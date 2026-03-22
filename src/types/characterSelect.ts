@@ -1,4 +1,4 @@
-﻿export type RoleType = 'Warrior' | 'Mage' | 'Assassin';
+﻿export type RoleType = 'Warrior' | 'Mage' | 'Assassin' | 'God';
 
 export interface CharacterInfo {
   id: string;
@@ -11,3 +11,4 @@ export interface CharacterInfo {
   crit: number;
   skill: string;
 }
+

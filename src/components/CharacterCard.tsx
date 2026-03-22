@@ -1,5 +1,6 @@
 ﻿import { motion } from 'framer-motion';
 import { CharacterInfo } from '../types/characterSelect';
+import { sanitizeImageUrl } from '../logic/security';
 
 interface CharacterCardProps {
   character: CharacterInfo;
@@ -11,7 +12,8 @@ interface CharacterCardProps {
 const roleStyle: Record<CharacterInfo['role'], string> = {
   Warrior: 'from-sky-500/60 to-blue-700/60 border-sky-300/55 text-sky-100',
   Mage: 'from-violet-500/60 to-purple-700/60 border-violet-300/55 text-violet-100',
-  Assassin: 'from-rose-500/60 to-red-700/60 border-rose-300/55 text-rose-100'
+  Assassin: 'from-rose-500/60 to-red-700/60 border-rose-300/55 text-rose-100',
+  God: 'from-amber-500/70 to-yellow-600/70 border-amber-200/80 text-amber-50'
 };
 
 const CharacterCard = ({ character, selected, onSelect, index }: CharacterCardProps) => {
@@ -27,7 +29,7 @@ const CharacterCard = ({ character, selected, onSelect, index }: CharacterCardPr
           : 'border-slate-400/25 shadow-[0_12px_36px_rgba(0,0,0,0.5)] hover:border-amber-200/55 hover:shadow-[0_0_32px_rgba(99,102,241,0.35)]'
       }`}
     >
-      <img src={character.image} alt={character.roleZh} className="h-[500px] w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+      <img src={sanitizeImageUrl(character.image, '/img/characters/warrior.png')} alt={character.roleZh} className="h-[500px] w-full object-cover transition-transform duration-700 group-hover:scale-105" />
 
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/68 to-black/10" />
       <div className="absolute inset-x-0 top-0 h-[35%] bg-gradient-to-b from-black/30 to-transparent" />
@@ -80,3 +82,4 @@ const CharacterCard = ({ character, selected, onSelect, index }: CharacterCardPr
 };
 
 export default CharacterCard;
+

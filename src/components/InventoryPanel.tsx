@@ -1,6 +1,7 @@
 ﻿import { getSkillById } from '../data/skillData';
 import { getSkillDamagePreview } from '../logic/battle';
 import { EquipmentItem, EquipmentRarity, Player } from '../types/game';
+import { sanitizeImageUrl } from '../logic/security';
 import Panel from './Panel';
 
 interface InventoryPanelProps {
@@ -47,7 +48,7 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
               <p className="text-slate-400">{slotLabel[slot]}</p>
               {item ? (
                 <>
-                  <img src={item.image} alt={item.name} className="mt-1 h-12 w-full rounded-md object-cover" />
+                  <img src={sanitizeImageUrl(item.image, '/img/characters/assassin.png')} alt={item.name} className="mt-1 h-12 w-full rounded-md object-cover" />
                   <p className="mt-1 text-slate-100">{item.name}</p>
                 </>
               ) : (
@@ -64,7 +65,7 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
             player.inventoryEquipment.map((item) => (
               <div key={item.id} className="rounded-lg border border-slate-600/70 bg-slate-900/60 p-2 text-xs">
                 <div className="flex items-start gap-2">
-                  <img src={item.image} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
+                  <img src={sanitizeImageUrl(item.image, '/img/characters/assassin.png')} alt={item.name} className="h-14 w-14 rounded-md object-cover" />
                   <div className="flex-1">
                     <p className="font-display text-sm text-slate-100">{item.name}</p>
                     <p className="text-amber-200">{rarityLabel[item.rarity]} </p>
@@ -108,4 +109,5 @@ const InventoryPanel = ({ player, onEquip, onSelectSkill }: InventoryPanelProps)
 };
 
 export default InventoryPanel;
+
 
